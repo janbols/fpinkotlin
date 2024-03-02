@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.jlleitschuh.gradle.ktlint") version "9.2.1"
+    // id("org.jlleitschuh.gradle.ktlint") version "9.2.1"
     kotlin("jvm") version "1.3.21"
     kotlin("kapt") version "1.3.21"
 }
@@ -36,17 +36,17 @@ tasks.withType<KotlinCompile>().configureEach {
     kotlinOptions.suppressWarnings = true
 }
 
-ktlint {
-    verbose.set(true)
-    disabledRules.set(
-        setOf(
-            "comment-spacing",
-            "filename",
-            "import-ordering",
-            "no-line-break-before-assignment"
-        )
-    )
-}
+// ktlint {
+//     verbose.set(true)
+//     disabledRules.set(
+//         setOf(
+//             "comment-spacing",
+//             "filename",
+//             "import-ordering",
+//             "no-line-break-before-assignment"
+//         )
+//     )
+// }
 
 kapt {
     useBuildCache = false
