@@ -90,25 +90,23 @@ fun <A> findFirst(xs: Array<A>, p: (A) -> Boolean): Int {
 ----
 
 
-> Implement `isSorted`, which checks whether a singly linked list `List<A>` is sorted according to a given comparison function. The function is preceded by two extension properties that add `head` and `tail` to any `List` value. The `head` property returns the first element of the list, while `tail` returns all subsequent elements as another `List<A>`
+> Implement `isSorted`, which checks whether a singly linked list `List<A>` is sorted according to a given comparison function.
 
 IMPORTANT: xref:../../../test/kotlin/chapter2/exercises/ex2/listing.kt[]
 
 >  the possible implementations are significantly reduced when implementing a polymorphic function
 
-.Runar Bjarnason:
-> Constraints liberate, liberties constrain
-
 === Partial application
 
-> This function, partial1, takes a value and a function with two arguments and returns a function with one argument as its result.
 
-> If I can give you a carrot for an apple and a banana, and you already gave me an apple, you just have to give me a banana, and I’ll give you a carrot.
+> This function, partial1, takes a value and a function with two arguments and returns a function with one argument as its result.
 
 [source, kotlin]
 ----
 fun <A, B, C> partial1(a: A, f: (A, B) -> C): (B) -> C = TODO()
 ----
+> If I can give you a carrot for an apple and a banana, and you already gave me an apple, you just have to give me a banana, and I’ll give you a carrot.
+
 
 IMPORTANT: xref:sec3/Listing1.kt[]
 
@@ -116,14 +114,15 @@ IMPORTANT: xref:sec3/Listing1.kt[]
 
 > converts a function f of two arguments into a function with one argument that partially applies f
 
-> Currying is named after the mathematician Haskell Curry, who discovered the principle. It was independently discovered earlier by Moses Schönfinkel, but Schönfinkelization just didn’t catch on.
-
 [source, kotlin]
 ----
 fun <A, B, C> curry(f: (A, B) -> C): (A) -> (B) -> C = TODO()
 ----
 
 IMPORTANT: xref:../../../test/kotlin/chapter2/exercises/ex3/listing.kt[]
+
+> Currying is named after the mathematician Haskell Curry, who discovered the principle. It was independently discovered earlier by Moses Schönfinkel, but Schönfinkelization just didn’t catch on.
+
 
 === Uncurry
 [source, kotlin]
@@ -142,3 +141,9 @@ IMPORTANT: xref:../../../test/kotlin/chapter2/exercises/ex4/listing.kt[]
 fun <A, B, C> compose(f: (B) -> C, g: (A) -> B): (A) -> C = TODO()
 ----
 IMPORTANT: xref:../../../test/kotlin/chapter2/exercises/ex5/listing.kt[]
+
+
+.Runar Bjarnason:
+> Constraints liberate, liberties constrain
+
+

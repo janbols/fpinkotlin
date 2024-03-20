@@ -5,7 +5,7 @@
 
 {url-quickref}[See chapter online chapter].
 
-== Imperative
+== Imperative programming
 
 [quote]
 
