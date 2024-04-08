@@ -18,7 +18,7 @@ fun <A> concat2(lla: List<List<A>>): List<A> =
 //TODO: Enable tests by removing `!` prefix
 class Exercise14 : WordSpec({
     "list concat" should {
-        "!concatenate a list of lists into a single list" {
+        "concatenate a list of lists into a single list" {
             concat(
                 List.of(
                     List.of(1, 2, 3),

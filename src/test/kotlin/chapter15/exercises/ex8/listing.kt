@@ -27,12 +27,12 @@ class Exercise8 : WordSpec({
     "exists" should {
         val stream = Stream.of(1, 3, 5, 6, 7)
 
-        "!not halt and yield all intermediate results" {
+        "not halt and yield all intermediate results" {
             val p = exists<Int> { i -> i % 2 == 0 }
             p(stream).toList() shouldBe
                 List.of(false, false, false, true, true)
         }
-        "!halt and yield all intermediate results" {
+        "halt and yield all intermediate results" {
             val p = existsAndHalt<Int> { i -> i % 2 == 0 }
             p(stream).toList() shouldBe
                 List.of(false, false, false, true)

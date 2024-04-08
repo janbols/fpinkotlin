@@ -17,7 +17,7 @@ class Exercise16 : WordSpec({
     //end::scanright[]
 
     "Stream.scanRight" should {
-        "!behave like foldRight" {
+        "behave like foldRight" {
             Stream.of(1, 2, 3)
                 .scanRight(0, { a, b ->
                     a + b()

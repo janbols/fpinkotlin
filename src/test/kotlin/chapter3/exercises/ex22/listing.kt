@@ -14,7 +14,7 @@ fun <A> zipWith(xa: List<A>, xb: List<A>, f: (A, A) -> A): List<A> =
 //TODO: Enable tests by removing `!` prefix
 class Exercise22 : WordSpec({
     "list zipWith" should {
-        "!apply a function to elements of two corresponding lists" {
+        "apply a function to elements of two corresponding lists" {
             zipWith(
                 List.of(1, 2, 3),
                 List.of(4, 5, 6)

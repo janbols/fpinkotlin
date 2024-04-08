@@ -32,7 +32,7 @@ class Exercise6 : WordSpec({
     val stream = Stream.of(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
 
     "the combinator" should {
-        "!feed input into two processes" {
+        "feed input into two processes" {
             val p1 = sum()
             val p2 = count<Double>()
             zip(p1, p2)(stream).toList() shouldBe List.of(
@@ -47,7 +47,7 @@ class Exercise6 : WordSpec({
     }
 
     "mean" should {
-        "!calculate a running average of values encountered so far" {
+        "calculate a running average of values encountered so far" {
             val p = mean()
             p(stream).toList() shouldBe
                 List.of(1.0, 1.5, 2.0, 2.5, 3.0, 3.5)

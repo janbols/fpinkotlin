@@ -14,7 +14,7 @@ class Exercise1 : WordSpec({
     //end::init[]
 
     "fib" should {
-        "!return the nth fibonacci number" {
+        "return the nth fibonacci number" {
             persistentMapOf(
                 1 to 1,
                 2 to 1,

@@ -16,7 +16,7 @@ fun maximum(tree: Tree<Int>): Int =
 //TODO: Enable tests by removing `!` prefix
 class Exercise25 : WordSpec({
     "tree maximum" should {
-        "!determine the maximum value held in a tree" {
+        "determine the maximum value held in a tree" {
             val tree = Branch(
                 Branch(Leaf(1), Leaf(9)),
                 Branch(Leaf(3), Leaf(4))

@@ -27,7 +27,7 @@ fun booleanAnd(): Monoid<Boolean> =
 //TODO: Enable tests by removing `!` prefix
 class Exercise1 : WordSpec({
     "int and boolean monoids" should {
-        "!uphold the law of associativity" {
+        "uphold the law of associativity" {
             assertAll<Int, Int> { a, b ->
                 assert(intAddition().combine(a, b) == (a + b))
                 assert(intMultiplication().combine(a, b) == (a * b))
@@ -37,7 +37,7 @@ class Exercise1 : WordSpec({
                 assert(booleanOr().combine(a, b) == (a || b))
             }
         }
-        "!uphold the law of identity" {
+        "uphold the law of identity" {
             intAddition().nil shouldBe 0
             intMultiplication().nil shouldBe 1
             booleanAnd().nil shouldBe true

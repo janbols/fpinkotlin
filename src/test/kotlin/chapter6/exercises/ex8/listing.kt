@@ -20,7 +20,7 @@ class Exercise8 : WordSpec({
     fun nonNegativeIntLessThan(n: Int): Rand<Int> = SOLUTION_HERE()
 
     "flatMap" should {
-        "!pass along an RNG" {
+        "pass along an RNG" {
 
             val result =
                 flatMap(
@@ -33,7 +33,7 @@ class Exercise8 : WordSpec({
     }
 
     "nonNegativeIntLessThan" should {
-        "!return a non negative int less than n" {
+        "return a non negative int less than n" {
 
             val result =
                 nonNegativeIntLessThan(10)(rng1)

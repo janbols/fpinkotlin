@@ -22,7 +22,7 @@ class Exercise6 : WordSpec({
     //end::init[]
 
     "map2" should {
-        "!combine the results of two actions" {
+        "combine the results of two actions" {
 
             val combined: Rand<String> =
                 map2(

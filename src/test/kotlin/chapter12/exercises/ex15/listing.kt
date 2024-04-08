@@ -114,13 +114,13 @@ class Exercise15 : WordSpec({
     val y = listOf(6, 7, 8, 9, 10).k()
 
     "reverse" should {
-        "!reverse the order of any traversable functor" {
+        "reverse the order of any traversable functor" {
             T.reverse(
                 listOf(1, 2, 3, 4, 5).k()
             ) shouldBe listOf(5, 4, 3, 2, 1)
         }
 
-        "!follow the law" {
+        "follow the law" {
             T.toList(T.reverse(x)) + T.toList(T.reverse(y)) shouldBe
                 T.reverse((T.toList(y) + T.toList(x)).k())
         }

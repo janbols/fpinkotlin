@@ -23,7 +23,7 @@ class Exercise5 : WordSpec({
             override fun nextInt(): Pair<Int, RNG> = TODO()
         }
 
-        """!generate a max value approaching 1 based on
+        """generate a max value approaching 1 based on
             Int.MAX_VALUE using Rand""" {
 
             val rngMax = object : RNG {
@@ -35,7 +35,7 @@ class Exercise5 : WordSpec({
             doubleRand(rngMax) shouldBe (0.9999999995343387 to unusedRng)
         }
 
-        "!generate a min value of 0 based on 0 using Rand" {
+        "generate a min value of 0 based on 0 using Rand" {
 
             val rngMin = object : RNG {
                 override fun nextInt(): Pair<Int, RNG> =

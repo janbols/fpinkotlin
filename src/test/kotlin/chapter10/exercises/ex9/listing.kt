@@ -13,11 +13,11 @@ fun ordered(ints: Sequence<Int>): Boolean =
 //TODO: Enable tests by removing `!` prefix
 class Exercise9 : WordSpec({
     "ordered using balanced fold" should {
-        "!verify ordering ordered list" {
+        "verify ordering ordered list" {
             ordered(sequenceOf(1, 2, 3, 4, 5, 6, 7, 8, 9)) shouldBe true
         }
 
-        "!fail verification of unordered list" {
+        "fail verification of unordered list" {
             ordered(sequenceOf(3, 2, 5, 6, 1, 4, 7, 9, 8)) shouldBe false
         }
     }

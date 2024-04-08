@@ -18,7 +18,7 @@ fun <A, B> foldRightL(xs: List<A>, z: B, f: (A, B) -> B): B =
 //TODO: Enable tests by removing `!` prefix
 class Exercise12 : WordSpec({
     "list foldLeftR" should {
-        "!implement foldLeft functionality using foldRight" {
+        "implement foldLeft functionality using foldRight" {
             foldLeftR(
                 List.of(1, 2, 3, 4, 5),
                 0,
@@ -27,7 +27,7 @@ class Exercise12 : WordSpec({
     }
 
     "list foldRightL" should {
-        "!implement foldRight functionality using foldLeft" {
+        "implement foldRight functionality using foldLeft" {
             foldRightL(
                 List.of(1, 2, 3, 4, 5),
                 0,

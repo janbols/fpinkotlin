@@ -23,7 +23,7 @@ class Exercise15 : WordSpec({
         SOLUTION_HERE()
 
     "Stream.tails" should {
-        "!return the stream of suffixes of the input sequence" {
+        "return the stream of suffixes of the input sequence" {
             Stream.of(1, 2, 3)
                 .tails()
                 .toList()

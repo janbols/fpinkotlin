@@ -46,19 +46,19 @@ class Exercise28 : WordSpec({
                 )
             )
         )
-        "!generalise size" {
+        "generalise size" {
             sizeF(tree) shouldBe 15
         }
 
-        "!generalise maximum" {
+        "generalise maximum" {
             maximumF(tree) shouldBe 21
         }
 
-        "!generalise depth" {
+        "generalise depth" {
             depthF(tree) shouldBe 5
         }
 
-        "!generalise map" {
+        "generalise map" {
             mapF(tree) { it * 10 } shouldBe
                 Branch(
                     Branch(Leaf(10), Leaf(20)),

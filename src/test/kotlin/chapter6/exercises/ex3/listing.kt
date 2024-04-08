@@ -48,21 +48,21 @@ class Exercise3 : WordSpec({
                 Int.MAX_VALUE to rng2
         }
 
-        "!generate a pair of int and double" {
+        "generate a pair of int and double" {
             val (id, _) = intDouble(rng)
             val (i, d) = id
             i shouldBe Int.MAX_VALUE
             d shouldBe doubleBelowOne
         }
 
-        "!generate a pair of double and int" {
+        "generate a pair of double and int" {
             val (di, _) = doubleInt(rng)
             val (d, i) = di
             d shouldBe doubleBelowOne
             i shouldBe Int.MAX_VALUE
         }
 
-        "!generate a triple of double, double, double" {
+        "generate a triple of double, double, double" {
             val (ddd, _) = double3(rng)
             val (d1, d2, d3) = ddd
             d1 shouldBe doubleBelowOne

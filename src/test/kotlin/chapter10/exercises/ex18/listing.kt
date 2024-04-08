@@ -17,7 +17,7 @@ fun <A, B> functionMonoid(b: Monoid<B>): Monoid<(A) -> B> =
 class Exercise18 : WordSpec({
 
     "functionMonoid" should {
-        "!combine the results of two functions using another monoid" {
+        "combine the results of two functions using another monoid" {
             assertAll<Int> { i ->
 
                 val fm = functionMonoid<Int, String>(stringMonoid)

@@ -19,7 +19,7 @@ class Exercise4 : WordSpec({
     //end::init[]
 
     "ints" should {
-        "!generate a list of ints of a specified length" {
+        "generate a list of ints of a specified length" {
 
             ints(5, rng1) shouldBe (List.of(1, 1, 1, 1, 1) to rng1)
         }

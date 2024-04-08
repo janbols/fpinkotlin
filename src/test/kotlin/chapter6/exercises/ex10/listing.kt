@@ -44,19 +44,19 @@ data class State<S, out A>(val run: (S) -> Pair<A, S>) {
 //TODO: Enable tests by removing `!` prefix
 class Exercise10 : WordSpec({
     "unit" should {
-        "!compose a new state of pure a" {
+        "compose a new state of pure a" {
             State.unit<RNG, Int>(1).run(rng1) shouldBe (1 to rng1)
         }
     }
     "map" should {
-        "!transform a state" {
+        "transform a state" {
             State.unit<RNG, Int>(1)
                 .map { it.toString() }
                 .run(rng1) shouldBe ("1" to rng1)
         }
     }
     "flatMap" should {
-        "!transform a state" {
+        "transform a state" {
             State.unit<RNG, Int>(1)
                 .flatMap { i ->
                     State.unit<RNG, String>(i.toString())
@@ -64,7 +64,7 @@ class Exercise10 : WordSpec({
         }
     }
     "map2" should {
-        "!combine the results of two actions" {
+        "combine the results of two actions" {
 
             val combined: State<RNG, String> =
                 State.map2(
@@ -78,7 +78,7 @@ class Exercise10 : WordSpec({
         }
     }
     "sequence" should {
-        "!combine the results of many actions" {
+        "combine the results of many actions" {
 
             val combined: State<RNG, List<Int>> =
                 State.sequence(

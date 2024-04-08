@@ -14,7 +14,7 @@ fun increment(xs: List<Int>): List<Int> =
 //TODO: Enable tests by removing `!` prefix
 class Exercise15 : WordSpec({
     "list increment" should {
-        "!add 1 to every element" {
+        "add 1 to every element" {
             increment(List.of(1, 2, 3, 4, 5)) shouldBe
                 List.of(2, 3, 4, 5, 6)
         }

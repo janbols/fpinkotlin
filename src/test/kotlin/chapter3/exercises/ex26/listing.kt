@@ -16,7 +16,7 @@ fun depth(tree: Tree<Int>): Int =
 //TODO: Enable tests by removing `!` prefix
 class Exercise26 : WordSpec({
     "tree depth" should {
-        "!determine the maximum depth from the root to any leaf" {
+        "determine the maximum depth from the root to any leaf" {
             val tree = Branch( //0
                 Branch(Leaf(1), Leaf(2)), //2
                 Branch(

@@ -57,16 +57,16 @@ class Exercise1 : WordSpec({
     val some = Some(10)
 
     "option map" should {
-        "!transform an option of some value" {
+        "transform an option of some value" {
             some.map { it * 2 } shouldBe Some(20)
         }
-        "!pass over an option of none" {
+        "pass over an option of none" {
             none.map { it * 10 } shouldBe None
         }
     }
 
     "option flatMap" should {
-        """!apply a function yielding an option to an
+        """apply a function yielding an option to an
             option of some value""" {
             some.flatMap { a ->
                 Some(a.toString())
@@ -76,7 +76,7 @@ class Exercise1 : WordSpec({
                 Some(a.toString())
             } shouldBe Some("10")
         }
-        "!pass over an option of none" {
+        "pass over an option of none" {
             none.flatMap { a ->
                 Some(a.toString())
             } shouldBe None
@@ -88,31 +88,31 @@ class Exercise1 : WordSpec({
     }
 
     "option getOrElse" should {
-        "!extract the value of some option" {
+        "extract the value of some option" {
             some.getOrElse { 0 } shouldBe 10
         }
-        "!return a default value if the option is none" {
+        "return a default value if the option is none" {
             none.getOrElse { 10 } shouldBe 10
         }
     }
 
     "option orElse" should {
-        "!return the option if the option is some" {
+        "return the option if the option is some" {
             some.orElse { Some(20) } shouldBe some
             some.orElse_2 { Some(20) } shouldBe some
         }
-        "!return a default option if the option is none" {
+        "return a default option if the option is none" {
             none.orElse { Some(20) } shouldBe Some(20)
             none.orElse_2 { Some(20) } shouldBe Some(20)
         }
     }
 
     "option filter" should {
-        "!return some option if the predicate is met" {
+        "return some option if the predicate is met" {
             some.filter { it > 0 } shouldBe some
             some.filter_2 { it > 0 } shouldBe some
         }
-        "!return a none option if the predicate is not met" {
+        "return a none option if the predicate is not met" {
             some.filter { it < 0 } shouldBe None
             some.filter_2 { it < 0 } shouldBe None
         }

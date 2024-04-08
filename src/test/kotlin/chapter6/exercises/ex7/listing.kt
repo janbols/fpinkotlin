@@ -32,7 +32,7 @@ class Exercise7 : WordSpec({
 
     "sequence" should {
 
-        "!combine the results of many actions using recursion" {
+        "combine the results of many actions using recursion" {
 
             val combined: Rand<List<Int>> =
                 sequence(
@@ -48,7 +48,7 @@ class Exercise7 : WordSpec({
                 List.of(1, 2, 3, 4)
         }
 
-        """!combine the results of many actions using
+        """combine the results of many actions using
             foldRight and map2""" {
 
             val combined2: Rand<List<Int>> =
@@ -67,7 +67,7 @@ class Exercise7 : WordSpec({
     }
 
     "ints" should {
-        "!generate a list of ints of a specified length" {
+        "generate a list of ints of a specified length" {
             ints2(4, rng1).first shouldBe
                 List.of(1, 1, 1, 1)
         }

@@ -15,37 +15,37 @@ object OptionFoldable : Foldable<ForOption>
 //TODO: Enable tests by removing `!` prefix
 class Exercise15 : WordSpec({
     "OptionFoldable" should {
-        "!foldMap some" {
+        "foldMap some" {
             OptionFoldable.foldMap(
                 Some(1000),
                 stringMonoid
             ) { it.toString() } shouldBe "1000"
         }
-        "!foldMap none" {
+        "foldMap none" {
             OptionFoldable.foldMap(
                 None,
                 stringMonoid
             ) { it.toString() } shouldBe ""
         }
-        "!foldLeft some" {
+        "foldLeft some" {
             OptionFoldable.foldLeft(
                 Some(1),
                 "",
                 { _, b -> b.toString() }) shouldBe "1"
         }
-        "!foldLeft none" {
+        "foldLeft none" {
             OptionFoldable.foldLeft(
                 None,
                 "a",
                 { _, b -> b.toString() }) shouldBe "a"
         }
-        "!foldRight some" {
+        "foldRight some" {
             OptionFoldable.foldRight(
                 Some(1),
                 "",
                 { b, a -> b.toString() }) shouldBe "1"
         }
-        "!foldRight none" {
+        "foldRight none" {
             OptionFoldable.foldRight(
                 None,
                 "a",

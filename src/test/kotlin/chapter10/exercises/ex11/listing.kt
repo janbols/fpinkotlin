@@ -20,7 +20,7 @@ class Exercise11 : WordSpec({
             .split(" ")
 
     "word count" should {
-        "!count words using balanced folding" {
+        "count words using balanced folding" {
             assertAll(Gen.list(Gen.from(words))) { ls ->
                 val text = ls.joinToString(" ")
                 println("${ls.size}: $text")

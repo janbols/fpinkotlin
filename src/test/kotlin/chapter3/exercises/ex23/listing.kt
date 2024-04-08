@@ -20,7 +20,7 @@ tailrec fun <A> hasSubsequence(xs: List<A>, sub: List<A>): Boolean =
 //TODO: Enable tests by removing `!` prefix
 class Exercise23 : WordSpec({
     "list subsequence" should {
-        "!determine if a list starts with" {
+        "determine if a list starts with" {
             val xs = List.of(1, 2, 3)
             startsWith(xs, List.of(1)) shouldBe true
             startsWith(xs, List.of(1, 2)) shouldBe true
@@ -30,7 +30,7 @@ class Exercise23 : WordSpec({
             startsWith(xs, List.of(6)) shouldBe false
         }
 
-        "!identify subsequences of a list" {
+        "identify subsequences of a list" {
             val xs = List.of(1, 2, 3, 4, 5)
             hasSubsequence(xs, List.of(1)) shouldBe true
             hasSubsequence(xs, List.of(1, 2)) shouldBe true

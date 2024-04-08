@@ -19,7 +19,7 @@ fun <A, S> unfold(z: S, f: (S) -> Option<Pair<A, S>>): Stream<A> =
 //TODO: Enable tests by removing `!` prefix
 class Exercise11 : WordSpec({
     "unfold" should {
-        """!return a stream based on an initial state and a function
+        """return a stream based on an initial state and a function
             applied to each subsequent element""" {
             unfold(0, { s: Int ->
                 Some(s to (s + 1))

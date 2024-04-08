@@ -18,7 +18,7 @@ class Exercise10 : WordSpec({
     //end::init[]
 
     "fibs" should {
-        "!return a Stream of fibonacci sequence numbers" {
+        "return a Stream of fibonacci sequence numbers" {
             fibs().take(10).toList() shouldBe
                 List.of(0, 1, 1, 2, 3, 5, 8, 13, 21, 34)
         }

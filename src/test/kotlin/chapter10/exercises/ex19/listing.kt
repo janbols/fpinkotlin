@@ -21,7 +21,7 @@ object ListFoldable : Foldable<ForList> {
 //TODO: Enable tests by removing `!` prefix
 class Exercise19 : WordSpec({
     "bag" should {
-        "!bin the contents of a list into a map" {
+        "bin the contents of a list into a map" {
             assertAll(Gen.list(Gen.choose(0, 10))) { ls ->
                 val actual = ListFoldable.bag(ls.asConsList())
                 val expected =

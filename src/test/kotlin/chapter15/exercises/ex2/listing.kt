@@ -23,7 +23,7 @@ fun <I> count(): Process<I, Int> =
 //TODO: Enable tests by removing `!` prefix
 class Exercise2 : WordSpec({
     "count" should {
-        "!emit a stream of numbers representing elements consumed" {
+        "emit a stream of numbers representing elements consumed" {
             val stream = Stream.of("a", "b", "c", "d")
             val p = count<String>()
             p(stream).toList() shouldBe List.of(1, 2, 3, 4)

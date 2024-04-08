@@ -17,17 +17,17 @@ object TreeFoldable : Foldable<ForTree>
 class Exercise14 : WordSpec({
     "TreeFoldable" should {
         val t = Branch(Branch(Leaf(1), Leaf(2)), Branch(Leaf(3), Leaf(4)))
-        "!foldMap" {
+        "foldMap" {
             TreeFoldable.foldMap(t, intAdditionMonoid) { it } shouldBe 10
             TreeFoldable.foldMap(
                 t,
                 intMultiplicationMonoid
             ) { it } shouldBe 24
         }
-        "!foldRight" {
+        "foldRight" {
             TreeFoldable.foldRight(t, 0, { a, b -> a + b }) shouldBe 10
         }
-        "!foldLeft" {
+        "foldLeft" {
             TreeFoldable.foldRight(t, 1, { a, b -> a * b }) shouldBe 24
         }
     }

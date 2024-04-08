@@ -63,7 +63,7 @@ interface Applicative<F> : Functor<F> {
 //TODO: Enable tests by removing `!` prefix
 class Exercise1 : WordSpec({
     "product" should {
-        "!return all product permutations of lists" {
+        "return all product permutations of lists" {
             val AF = object : Applicative<ForList> {
                 override fun <A, B, C> map2(
                     fa: ListOf<A>,
@@ -90,7 +90,7 @@ class Exercise1 : WordSpec({
             )
         }
 
-        "!return all product permutations of options" {
+        "return all product permutations of options" {
             val AF = object : Applicative<ForOption> {
                 override fun <A, B, C> map2(
                     fa: Kind<ForOption, A>,

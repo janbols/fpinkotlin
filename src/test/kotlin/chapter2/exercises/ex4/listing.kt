@@ -13,7 +13,7 @@ class Exercise4 : WordSpec({
     // end::init[]
 
     "uncurry" should {
-        """!take a function accepting two values and then apply that
+        """take a function accepting two values and then apply that
             function to the components of the pair which is the
             second argument""" {
 

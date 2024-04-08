@@ -39,13 +39,13 @@ fun <I> count(): Process<I, Int> =
 class Exercise4 : WordSpec({
     val stream = Stream.of(1.0, 2.0, 3.0, 4.0, 5.0)
     "sum" should {
-        "!produce a stream that accumulates a sum of values of a stream" {
+        "produce a stream that accumulates a sum of values of a stream" {
             sum(0.0)(stream).toList() shouldBe
                 List.of(1.0, 3.0, 6.0, 10.0, 15.0)
         }
     }
     "count" should {
-        "!produce a stream counting the number of elements in a stream" {
+        "produce a stream counting the number of elements in a stream" {
             count<Double>()(stream).toList() shouldBe
                 List.of(1, 2, 3, 4, 5)
         }

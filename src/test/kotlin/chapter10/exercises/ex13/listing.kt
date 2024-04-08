@@ -15,7 +15,7 @@ object ListFoldable : Foldable<ForList>
 //TODO: Enable tests by removing `!` prefix
 class Exercise13 : WordSpec({
     "ListFoldable" should {
-        "!foldRight" {
+        "foldRight" {
             assertAll<List<Int>> { ls ->
                 ListFoldable.foldRight(
                     ls.asConsList(),
@@ -24,7 +24,7 @@ class Exercise13 : WordSpec({
                 ) shouldBe ls.sum()
             }
         }
-        "!foldLeft" {
+        "foldLeft" {
             assertAll<List<Int>> { ls ->
                 ListFoldable.foldLeft(
                     ls.asConsList(),
@@ -32,7 +32,7 @@ class Exercise13 : WordSpec({
                     { b, a -> a + b }) shouldBe ls.sum()
             }
         }
-        "!foldMap" {
+        "foldMap" {
             assertAll<List<Int>> { ls ->
                 ListFoldable.foldMap(
                     ls.asConsList(),

@@ -37,7 +37,7 @@ class Exercise8 : WordSpec() {
 
     init {
         "balanced folding parForMap" should {
-            "!fold a list in parallel" {
+            "fold a list in parallel" {
                 //tag::init2[]
                 parFoldMap(
                     listOf("lorem", "ipsum", "dolor", "sit"),

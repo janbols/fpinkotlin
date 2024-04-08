@@ -15,7 +15,7 @@ class Exercise1 : WordSpec({
     //end::init[]
 
     "Stream.toList" should {
-        "!force the stream into an evaluated list" {
+        "force the stream into an evaluated list" {
             val s = Stream.of(1, 2, 3, 4, 5)
             s.toList() shouldBe List.of(1, 2, 3, 4, 5)
         }

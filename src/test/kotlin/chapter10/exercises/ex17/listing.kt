@@ -20,7 +20,7 @@ fun <A, B> productMonoid(
 //TODO: Enable tests by removing `!` prefix
 class Exercise17 : WordSpec({
     "productMonoid" should {
-        "!comply with the law of associativity" {
+        "comply with the law of associativity" {
             assertAll<Pair<Int, String>> { p ->
                 val product =
                     productMonoid(intAdditionMonoid, stringMonoid)

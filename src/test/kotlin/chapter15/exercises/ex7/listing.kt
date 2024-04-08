@@ -23,7 +23,7 @@ class Exercise7 : WordSpec({
     fun <I> pass(): Process<I, I> = lift { it }
 
     "zipWithIndex" should {
-        "!emit count of zero-based values along with stream each value" {
+        "emit count of zero-based values along with stream each value" {
             val stream = Stream.of("a", "b", "c", "d", "e")
             pass<String>().zipWithIndex()(stream).toList() shouldBe
                 List.of(

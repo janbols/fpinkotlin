@@ -19,7 +19,7 @@ class Exercise9 : WordSpec({
     //end::init1[]
 
     "mapF" should {
-        "!map over a value using flatMap" {
+        "map over a value using flatMap" {
             mapF(
                 unit(1),
                 { a -> a.toString() })(rng1).first shouldBe "1"
@@ -40,7 +40,7 @@ class Exercise9 : WordSpec({
     //end::init2[]
 
     "map2F" should {
-        "!combine the results of two actions" {
+        "combine the results of two actions" {
 
             val combined: Rand<String> =
                 map2F(
