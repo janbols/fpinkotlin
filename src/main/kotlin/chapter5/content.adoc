@@ -1,0 +1,261 @@
+= 5 Strictness and laziness
+:toc:
+:icons: font
+:url-quickref: https://livebook.manning.com/book/functional-programming-in-kotlin/chapter-5/
+
+{url-quickref}[See chapter online chapter].
+
+
+
+
+strict evaluation = eager = greedy
+
+-> evaluated at the moment they are bound to a variable
+
+-> Wat bij dure berekeningen van een lijst als we enkel het eerste element van de lijst nodig hebben?
+
+strict <--> non-strict or lazy
+
+> the value is only computed at the point where it is actually referenced, not where it is declared
+
+> Imagine if you had a deck of cards and you were asked to remove the odd-numbered cards and then flip over all the queens.
+
+Lijkt op...
+[source, kotlin]
+----
+List.of(1, 2, 3, 4)
+    .map { it + 10 }
+    .filter { it % 2 == 0 }
+    .map { it * 3 }
+----
+=>
+[source, kotlin]
+----
+List.of(1, 2, 3, 4)
+    .map { it + 10 }.filter { it % 2 == 0 }.map { it * 3 }
+List.of(11, 12, 13, 14)
+    .filter { it % 2 == 0 }.map { it * 3 }
+List.of(12, 14)
+    .map { it * 3 }
+List.of(36, 42)
+----
+=> dit kan efficienter :-)
+
+
+== Strict and non-strict functions
+
+> Non-strictness is a property of a function. To say a function is non-strict just means the function may choose not to evaluate one or more of its arguments. In contrast, a strict function always evaluates its arguments.
+
+Kotlin -> strict
+
+Haskell -> lazy
+
+[source, kotlin]
+----
+import kotlin.system.exitProcess
+
+fun square(x: Double): Double = x * x
+
+square(41+1)
+square(exitProcess(-1))
+----
+
+=== &&  ||
+
+Short-circuiting boolean expressions -> non-strict
+
+[source, kotlin]
+----
+>>> false && { println("!!"); true }.invoke() //does not print anything
+res0: kotlin.Boolean = false
+----
+
+> The function `&&` takes two Boolean arguments but only evaluates the second argument if the first is true
+
+
+[source, kotlin]
+----
+>>> true || { println("!!"); false }.invoke() //does not print anything either
+res1: kotlin.Boolean = true
+----
+
+> The function `||` only evaluates its second argument if the first is false
+
+
+[source, kotlin]
+----
+val result = if (input.isEmpty()) exitProcess(-1) else input
+----
+
+> The `if` function accepts three parameters: a condition of type Boolean, an expression of some type A to return in the case that the condition is true, and another expression of the same type A to return if the condition is false
+
+If as a function:
+[source, kotlin]
+----
+fun <A> lazyIf(
+    cond: Boolean,
+    onTrue: () -> A,
+    onFalse: () -> A
+): A = if (cond) onTrue() else onFalse()
+
+val y = lazyIf((a < 22),
+    { println("a") },
+    { println("b") }
+)
+----
+
+() -> A
+
+> The unevaluated form of an expression is called a *thunk*, and we can *force* the thunk to evaluate the expression and get a result.
+
+=== Caching
+
+> Kotlin won’t (by default) cache the result of evaluating an argument
+
+[source, kotlin]
+----
+fun maybeTwice(b: Boolean, i: () -> Int) =
+    if (b) i() + i() else 0
+>>> val x = maybeTwice(true, { println("hi"); 1 + 41 })
+hi
+hi
+----
+
+[source, kotlin]
+----
+fun maybeTwice2(b: Boolean, i: () -> Int) {
+    val j: Int by lazy(i)
+    if (b) j + j else 0
+}
+>>> val x = maybeTwice2(true, { println("hi"); 1 + 41 })
+hi
+----
+-> lazy built-in function
+
+Voor de axioma liefhebbers:
+
+> Suppose the evaluation of an expression runs forever or throws an error instead of returning a definite value. In that case, we say that the expression doesn’t terminate or that it evaluates to _bottom_. A function f is strict if the expression f(x) evaluates to bottom for all x that evaluates to bottom.
+
+
+=== Lazy initialization
+
+> Lazy initialization is the tactic of delaying creating an object, calculating a value, or some other expensive process until the first time it is needed.
+
+[source, kotlin]
+----
+val x: Int by lazy { expensiveOp() }
+
+fun useit() =
+    if (x > 10) "hi"
+    else if (x == 0) "zero"
+    else ("lo")
+----
+
+
+== An extended example: Lazy lists (streams)
+
+[source, kotlin]
+----
+sealed class Stream<out A>
+
+data class Cons<out A>(
+    val head: () -> A,
+    val tail: () -> Stream<A>
+) : Stream<A>()
+
+object Empty : Stream<Nothing>()
+----
+-> thunks instead of values
+
+=== get head of stream:
+[source, kotlin]
+----
+fun <A> Stream<A>.headOption(): Option<A> =
+    when (this) {
+        is Empty -> None
+        is Cons -> Some(head())
+    }
+----
+
+=> If we wish to examine or traverse the Stream, we need to force these thunks (cfr lazyIf)
+
+
+
+
+=== Memoizing streams and avoiding recomputation
+
+=> prevent multiple evaluations of expensive computations by caching the result of the initial evaluation
+
+[source, kotlin]
+----
+val x = Cons({ expensive(y) }, { tl })
+val h1 = x.headOption()
+val h2 = x.headOption()
+----
+
+=> opgelost door smart constructor:
+
+[source, kotlin]
+----
+fun <A> cons(hd: () -> A, tl: () -> Stream<A>): Stream<A> {
+    val head: A by lazy(hd)
+    val tail: Stream<A> by lazy(tl)
+    return Cons({ head }, { tail })
+}
+
+fun <A> empty(): Stream<A> = Empty
+
+fun <A> of(vararg xs: A): Stream<A> =
+    if (xs.isEmpty()) empty()
+    else cons({ xs[0] },
+        { of(*xs.sliceArray(1 until xs.size)) })
+----
+
+
+=== Helper functions for inspecting streams
+
+
+==== toList
+
+> Write a function to convert a Stream to a List, which will force its evaluation.
+
+[source, kotlin]
+----
+fun <A> Stream<A>.toList(): List<A> =
+----
+
+IMPORTANT: xref:../../../test/kotlin/chapter5/exercises/ex1/listing.kt[]
+
+NOTE: stacksafe: xref:../../../test/kotlin/chapter5/solutions/ex1/listing.kt[]
+
+==== take / drop
+
+> Write the functions take(n) to return the first n elements of a Stream and drop(n) to skip the first n elements of a Stream.
+
+[source, kotlin]
+----
+fun <A> Stream<A>.take(n: Int): Stream<A> =
+fun <A> Stream<A>.drop(n: Int): Stream<A> =
+----
+
+IMPORTANT: xref:../../../test/kotlin/chapter5/exercises/ex2/listing.kt[]
+
+==== takeWhile
+
+> Write the function takeWhile to return all starting elements of a Stream that match the given predicate.
+
+[source, kotlin]
+----
+fun <A> Stream<A>.takeWhile(p: (A) -> Boolean): Stream<A> =
+----
+
+IMPORTANT: xref:../../../test/kotlin/chapter5/exercises/ex3/listing.kt[]
+
+
+
+== Separating program description from evaluation
+
+
+== Producing infinite data streams through corecursive functions
+== Conclusion
+
