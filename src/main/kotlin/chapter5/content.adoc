@@ -134,7 +134,7 @@ hi
 
 Voor de axioma liefhebbers:
 
-> Suppose the evaluation of an expression runs forever or throws an error instead of returning a definite value. In that case, we say that the expression doesn’t terminate or that it evaluates to _bottom_. A function f is strict if the expression f(x) evaluates to bottom for all x that evaluates to bottom.
+> Suppose the evaluation of an expression runs forever or throws an error instead of returning a definite value. In that case, we say that the expression doesn’t terminate or that it evaluates to _bottom_. A *function f is strict* if the expression f(x) evaluates to bottom for all x that evaluates to bottom.
 
 
 === Lazy initialization
@@ -211,6 +211,7 @@ fun <A> of(vararg xs: A): Stream<A> =
         { of(*xs.sliceArray(1 until xs.size)) })
 ----
 
+NOTE: Return type of smart constructors is always Stream<A>
 
 === Helper functions for inspecting streams
 
@@ -255,7 +256,287 @@ IMPORTANT: xref:../../../test/kotlin/chapter5/exercises/ex3/listing.kt[]
 
 == Separating program description from evaluation
 
+*separation of concerns*: separate the description of computations from actually running them
+
+cfr. Option om een exception op te vangen en het behandelen van de exception uit te stellen tot later.
+
+[source, kotlin]
+----
+fun exists(p: (A) -> Boolean): Boolean =
+    when (this) {
+        is Cons -> p(this.head()) || this.tail().exists(p)
+        else -> false
+    }
+----
+
+=== Foldright
+
+[source, kotlin]
+----
+fun <B> foldRight(
+    z: () -> B,
+    f: (A, () -> B) -> B
+): B =
+    when (this) {
+        is Cons -> f(this.head()) {
+            tail().foldRight(z, f)
+        }
+        is Empty -> z()
+    }
+----
+
+NOTE: If f chooses not to evaluate its second parameter, the traversal will be terminated early.
+
+[source, kotlin]
+----
+fun exists2(p: (A) -> Boolean): Boolean =
+    foldRight({ false }, { a, b -> p(a) || b() })
+----
+
+==== forAll
+
+> Implement forAll, which checks that all elements in the Stream match a given predicate. Your implementation should terminate the traversal as soon as it encounters a non-matching value.
+
+[source, kotlin]
+----
+fun <A> Stream<A>.forAll(p: (A) -> Boolean): Boolean =
+----
+
+IMPORTANT: xref:../../../test/kotlin/chapter5/exercises/ex4/listing.kt[]
+
+==== takeWhile
+
+IMPORTANT: xref:../../../test/kotlin/chapter5/exercises/ex5/listing.kt[]
+
+==== headOption
+
+IMPORTANT: xref:../../../test/kotlin/chapter5/exercises/ex6/listing.kt[]
+
+==== map, filter, append, and flatMap
+
+IMPORTANT: xref:../../../test/kotlin/chapter5/exercises/ex7/listing.kt[]
+
+> these implementations are incremental —they don’t fully generate their answers
+
+vb: `Stream.of(1, 2, 3, 4).map { it + 10 }.filter { it % 2 == 0 }.map { it * 3 }`
+
+[source, kotlin]
+----
+import chapter3.Cons as ConsL
+import chapter3.Nil as NilL
+
+Stream.of(1, 2, 3, 4).map { it + 10 }
+    .filter { it % 2 == 0 }
+    .map { it * 3 }.toList()
+
+Stream.cons({ 11 }, { Stream.of(2, 3, 4).map { it + 10 } })
+    .filter { it % 2 == 0 }
+    .map { it * 3 }.toList()
+
+Stream.of(2, 3, 4).map { it + 10 }
+    .filter { it % 2 == 0 }
+    .map { it * 3 }.toList()
+
+Stream.cons({ 12 }, { Stream.of(3, 4).map { it + 10 } })
+    .filter { it % 2 == 0 }
+    .map { it * 3 }.toList()
+
+ConsL(36, Stream.of(3, 4).map { it + 10 }
+    .filter { it % 2 == 0 }
+    .map { it * 3 }.toList())
+
+ConsL(36, Stream.cons({ 13 }, { Stream.of(4).map { it + 10 } })
+    .filter { it % 2 == 0 }
+    .map { it * 3 }.toList()
+)
+
+ConsL(36, Stream.of(4).map { it + 10 }
+    .filter { it % 2 == 0 }
+    .map { it * 3 }.toList())
+
+ConsL(36, Stream.cons({ 14 }, { Stream.empty<Int>().map { it + 10 } })
+    .filter { it % 2 == 0 }
+    .map { it * 3 }.toList()
+)
+
+ConsL(36, ConsL(42, Stream.empty<Int>().map { it + 10 }
+    .filter { it % 2 == 0 }
+    .map { it * 3 }.toList()))
+
+ConsL(36, ConsL(42, NilL))
+----
+
+
+> Since intermediate streams aren’t instantiated, it’s easy to reuse existing combinators in novel ways
+
+[source, kotlin]
+----
+fun find(p: (A) -> Boolean): Option<A> =
+    filter(p).headOption()
+----
+
+> Because no intermediate streams are generated, transforming the stream requires only enough working memory to store and transform the current element.
+
 
 == Producing infinite data streams through corecursive functions
+
+*infinite streams*
+
+[source, kotlin]
+----
+fun ones(): Stream<Int> = Stream.cons({ 1 }, { ones() })
+----
+
+=== Examples:
+
+[source, kotlin]
+----
+>>> ones().take(5).toList()
+res0: chapter3.List<kotlin.Int> = Cons(head=1,
+    tail=Cons(head=1, tail=Cons(head=1,
+    tail=Cons(head=1, tail=Cons(head=1, tail=Nil)))))
+
+>>> ones().exists { it % 2 != 0 }
+res1: Boolean = true
+----
+
+[source, kotlin]
+----
+ones().map { it + 1 }.exists { it % 2 == 0 }
+ones().takeWhile { it == 1 }
+ones().forAll { it == 1 }
+ones.forAll { it != 1 }
+----
+
+=== Constant
+
+> Generalize ones slightly to the function constant, which returns an infinite Stream of a given value.
+
+[source, kotlin]
+----
+fun <A> constant(a: A): Stream<A> =
+----
+IMPORTANT: xref:../../../test/kotlin/chapter5/exercises/ex8/listing.kt[]
+
+=== From
+> Write a function that generates an infinite stream of integers, starting from n: n + 1, n + 2, and so on
+
+[source, kotlin]
+----
+fun from(n: Int): Stream<Int> =
+----
+
+IMPORTANT: xref:../../../test/kotlin/chapter5/exercises/ex9/listing.kt[]
+
+=== Fibs
+> Write a function fibs that generates the infinite stream of Fibonacci numbers: 0, 1, 1, 2, 3, 5, 8, and so on.
+
+[source, kotlin]
+----
+fun fibs(): Stream<Int> =
+----
+IMPORTANT: xref:../../../test/kotlin/chapter5/exercises/ex10/listing.kt[]
+
+
+=== Unfold
+
+> Write a more general stream-building function called unfold. It takes an initial state, and a function for producing both the next state and the next value in the generated stream. Option is used to indicate when the Stream should be terminated, if at all.
+
+[source, kotlin]
+----
+fun <A, S> unfold(z: S, f: (S) -> Option<Pair<A, S>>): Stream<A> =
+----
+
+IMPORTANT: xref:../../../test/kotlin/chapter5/exercises/ex11/listing.kt[]
+
+-> corecursive function
+
+> Whereas a recursive function consumes data, a corecursive function produces data.
+
+> whereas recursive functions terminate by recursing on smaller inputs, corecursive functions need not terminate as long as they remain productive
+
+
+> Write fibs, from, constant, and ones in terms of unfold.
+
+IMPORTANT: xref:../../../test/kotlin/chapter5/exercises/ex12/listing.kt[]
+
+==== map, take, takeWhile, zipWith, and zipAll
+
+> Use unfold to implement map, take, takeWhile, zipWith (as in chapter 3), and zipAll. The zipAll function should continue the traversal as long as either stream has more elements—it uses Option to indicate whether each stream has been exhausted.
+
+[source, kotlin]
+----
+fun <A, B> Stream<A>.map(f: (A) -> B): Stream<B> =
+
+
+fun <A> Stream<A>.take(n: Int): Stream<A> =
+
+
+fun <A> Stream<A>.takeWhile(p: (A) -> Boolean): Stream<A> =
+
+
+fun <A, B, C> Stream<A>.zipWith(
+    that: Stream<B>,
+    f: (A, B) -> C
+): Stream<C> =
+
+
+fun <A, B> Stream<A>.zipAll(
+    that: Stream<B>
+): Stream<Pair<Option<A>, Option<B>>> =
+
+----
+
+IMPORTANT: xref:../../../test/kotlin/chapter5/exercises/ex13/listing.kt[]
+
+
+==== hasSubsequence
+
+-> check whether a list contains a given subsequence.
+
+List implementation: see xref:../../../test/kotlin/chapter3/solutions/ex23/listing.kt[]
+
+> Using lazy lists, can you see how you could implement hasSubsequence by combining some other functions we’ve already written?
+
+
+===== startsWith
+
+> Implement startsWith using functions you’ve written previously. It should check whether one Stream is a prefix of another. For instance, `Stream(1,2,3).startsWith Stream(1,2)` would be true.
+
+[source, kotlin]
+----
+fun <A> Stream<A>.startsWith(that: Stream<A>): Boolean =
+----
+
+IMPORTANT: xref:../../../test/kotlin/chapter5/exercises/ex14/listing.kt[]
+
+NOTE: Solution: xref:../../../test/kotlin/chapter5/solutions/ex14/listing.kt[]
+
+
+===== tails
+
+> Implement tails using unfold. For a given Stream, tails returns the Stream of suffixes of the input sequence, starting with the original Stream. For example, given `Stream.of(1,2,3)`, it would return `Stream.of(Stream.of(1,2,3), Stream.of(2,3), Stream.of(3), Stream.empty())`.
+
+[source, kotlin]
+----
+fun <A> Stream<A>.tails(): Stream<Stream<A>> =
+----
+
+IMPORTANT: xref:../../../test/kotlin/chapter5/exercises/ex15/listing.kt[]
+
+
+===== hasSubsequence
+
+[source, kotlin]
+----
+fun <A> hasSubsequence(s: Stream<A>): Boolean =
+    this.tails().exists { it.startsWith(s) }
+----
+
+
 == Conclusion
+
+> Non-strictness can be thought of as a technique for recovering some efficiency when writing functional code. Still, it’s also a much bigger idea—non-strictness can improve modularity by separating the description of an expression from the how-and-when of its evaluation.
+
+> Keeping these concerns separate lets us reuse a description in multiple contexts, evaluating different portions of our expression to obtain different results.
 
