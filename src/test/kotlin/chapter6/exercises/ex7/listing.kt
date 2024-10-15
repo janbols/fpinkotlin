@@ -1,7 +1,9 @@
 package chapter6.exercises.ex7
 
 // import chapter3.Cons
+import chapter3.Cons
 import chapter3.List
+import chapter3.Nil
 // import chapter3.Nil
 // import chapter3.solutions.foldRight
 import chapter6.RNG
@@ -28,7 +30,12 @@ class Exercise7 : WordSpec({
         SOLUTION_HERE()
     //end::init2[]
 
-    fun ints2(count: Int, rng: RNG): Pair<List<Int>, RNG> = SOLUTION_HERE()
+    fun ints2(count: Int, rng: RNG): Pair<List<Int>, RNG> {
+        fun go(c: Int): List<Rand<Int>> =
+            if (c == 0) Nil
+            else Cons({ r -> 1 to r }, go(c - 1))
+        return sequence2(go(count))(rng)
+    }
 
     "sequence" should {
 

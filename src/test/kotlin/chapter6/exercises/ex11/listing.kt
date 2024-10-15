@@ -24,6 +24,12 @@ data class Machine(
     val candies: Int,
     val coins: Int
 )
+
+
+fun simulateMachine(
+    inputs: List<Input>
+): State<Machine, Tuple2<Int, Int>> = SOLUTION_HERE()
+
 //end::init1[]
 
 //TODO: Enable tests by removing `!` prefix
