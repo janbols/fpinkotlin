@@ -534,6 +534,35 @@ fun <A> hasSubsequence(s: Stream<A>): Boolean =
 ----
 
 
+===== scanRight
+
+Generalize tails to the function scanRight, which is like a foldRight that returns a stream of the intermediate results.
+
+
+
+[source, kotlin]
+----
+>>> Stream.of(1, 2, 3).scanRight(0, { a, b -> a + b }).toList()
+
+res1: chapter3.List<kotlin.Int> =
+   Cons(head=6,tail=Cons(head=5,tail=Cons(head=3,tail=Cons(head=0,tail=Nil))))
+----
+
+This example should be equivalent to the expression List.of(1+2+3+0, 2+3+0, 3+0, 0).
+
+Your function should reuse intermediate results so that traversing a Stream with n elements always takes time linear in n.
+
+Can it be implemented using unfold? How, or why not?
+
+Could it be implemented using another function you’ve written?
+
+
+
+IMPORTANT: xref:../../../test/kotlin/chapter5/exercises/ex16/listing.kt[]
+
+NOTE: Solution: xref:../../../test/kotlin/chapter5/solutions/ex16/listing.kt[]
+
+
 == Conclusion
 
 > Non-strictness can be thought of as a technique for recovering some efficiency when writing functional code. Still, it’s also a much bigger idea—non-strictness can improve modularity by separating the description of an expression from the how-and-when of its evaluation.
