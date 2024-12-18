@@ -894,7 +894,7 @@ In general, there are multiple approaches you can consider when choosing laws fo
 
 == 7.5 Refining combinators to their most general form
 
-... it’s a good idea to see if you can refine the combinator you need to its most _general_ form.
+> it’s a good idea to see if you can refine the combinator you need to its most _general_ form.
 
 === Choice
 
@@ -1005,7 +1005,5 @@ IMPORTANT: xref:../../../test/kotlin/chapter7/exercises/ex13/listing.kt[]
 
 
 > As you practice more functional programming, one of the skills you’ll develop is the ability to recognize what functions are expressible from an algebra and what the limitations of that algebra are. For instance, in the preceding example, it may not have been evident at first that a function like `choice` couldn’t be expressed purely in terms of `map`, `map2`, and `unit`. It also may not have been evident that choice was just a particular case of `flatMap`. Over time, observations like this will come more quickly. You’ll also get better at spotting how to modify your algebra to make some required combinator expressible. These abilities will be helpful for all of your API design work.
-
-d[]
 
 
