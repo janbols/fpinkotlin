@@ -1,0 +1,967 @@
+= 8  Property-based testing
+:toc:
+:icons: font
+:url-quickref: https://livebook.manning.com/book/functional-programming-in-kotlin/chapter-8/
+
+{url-quickref}[See chapter online chapter].
+
+
+> an API should form an algebra
+
+. a collection of data types,
+. functions over these data types,
+. laws or properties that express relationships between these functions
+
+-> somehow validate these laws automatically
+
+== 8.1 A brief tour of property-based testing
+
+=> decouple the specification of program behavior from the creation of test cases
+
+Example in kotlin:
+
+image::image-2025-01-04-21-46-44-009.png[]
+
+
+[source, kotlin]
+----
+val intList: Gen<List<Int>> = Gen.list(Gen.choose(0, 100))
+
+forAll(intList) {
+    (it.reversed().reversed() == it) and
+            (it.firstOption() == it.reversed().lastOrNone())
+}
+
+forAll(intList) {
+    it.reversed() == it
+}
+----
+
+`Gen<List<Int>>`: something that knows how to generate test data of type `List<Int>`. We can _sample_ from this generator to produce lists of different lengths, each filled with random numbers between 0 and 100.
+
+The function `forAll` creates a _property_ by combining a generator of the type `Gen<A>` with some predicate of type `(A) -> Boolean`. The property asserts that all values produced by the generator should satisfy this predicate.
+
+> the goal of this sort of testing is not necessarily to fully specify program behavior, but rather to give greater confidence in the code
+
+
+=== Exercise:
+
+Come up with properties that specify the implementation of a sum: `(List<Int>) -> Int` function
+
+[%collapsible]
+====
+* Reversing and summing a list should give the same result as summing the original, non-reversed list.
+* What should the sum be if all elements of the list are the same value?
+====
+
+
+What properties specify a function that finds the maximum of a `List<Int>`?
+
+
+=== Other features:
+
+* *Test case minimization*: In the event of a failing test, the framework tries increasingly smaller dataset sizes until it finds the smallest dataset that still fails
+* *Exhaustive test case generation*: The set of values that could be produced by some `Gen<A>` == the _domain_. When the domain is small enough, we can exhaustively test all its values rather than generate sample values. If the property holds for all values in a domain, we have actual _proof_ rather than just the absence of evidence to the contrary.
+
+== 8.2 Choosing data types and functions
+
+> messy and iterative process
+
+> this is a chance to explore a new domain and its design space while making your own discoveries about it. If at any point you feel inspired or have ideas about the design of a library, don’t wait for an exercise to prompt you! Put down the book, and explore your ideas.
+
+
+=== 8.2.1 Gathering initial snippets for a possible API
+
+Without knowing anything about the implementation, we can guess that whatever data type they return (let’s call it `Gen`, short for generator) must be _parametric_ in some type.
+
+`Gen.choose(0,100)` probably returns a `Gen<Int>`, and `Gen.list` is then a function with the signature `(Gen<Int>) -> Gen<List<Int>>`.
+
+==== listOf
+We’ll call our method `listOf` to make the intent clear:
+
+[source, kotlin]
+----
+fun <A> listOf(a: Gen<A>): List<Gen<A>> = TODO()
+----
+
+Notice that we’re not specifying the *size* of the list to generate. For this to be implementable, our generator must either _make an assumption_ or _explicitly tell the size_. Assuming a size seems a bit inflexible: any assumption is unlikely to be appropriate in all contexts. So it seems that generators must be told the size of test cases to generate.
+
+[source, kotlin]
+----
+fun <A> listOfN(n: Int, a: Gen<A>): List<Gen<A>> = TODO()
+----
+
+NOTE: But not having to explicitly specify sizes is powerful as well. It means whatever function runs the tests has the freedom to choose test case sizes, which opens up the possibility of doing the test case minimization we mentioned earlier. If the sizes are permanently fixed and specified by the programmer, the test runner won’t have this flexibility.
+
+==== forall
+
+...it accepts a `Gen<List<Int>>` and what looks to be a corresponding predicate, `(List<Int>) -> Boolean`. Again, it doesn’t seem as though forAll should care about the generator types and the predicate, as long as they match up.
+
+[source, kotlin]
+----
+fun <A> forAll(a: Gen<A>, f: (A) -> Boolean): Prop = TODO()
+----
+
+Here, we’ve simply invented a new type, `Prop` (short for property), for the _result of binding a `Gen` to a predicate_. We might not know the internal representation of `Prop` or what other functions it supports, but it should be combined with other `Prop` instances through the use of an `and` method.
+
+[source, kotlin]
+----
+interface Prop {
+    fun and(p: Prop): Prop
+}
+----
+
+=== 8.2.2 Exploring the meaning and API of properties
+
+...let’s discuss what we want our types and functions to entail.
+
+==== Prop.
+
+We know of functions `forAll` (for creating a property) and `and` (for composing properties), and now we’ll learn about `check`. We’ll imagine this to be a method that _runs our property and has a side effect of printing to the console_.
+
+[source, kotlin]
+----
+interface Prop {
+    fun check(): Unit
+    fun and(p: Prop): Prop
+}
+----
+
+The return type `Unit` raises an issue in that we can’t chain together multiple checked `Props` using the `and` operator.
+
+Since `check` has a side effect, the only option for implementing `and` in this case would be to run `check` on both Prop instances. So if `check` printed out a test report, we would get two of them, each printing failures and successes independently of each other. The problem is not so much that check has a side effect but, more generally, that it throws away information by returning `Unit`.
+
+To combine `Prop` values using combinators like `and`, we need `check` to return a meaningful value. ... At a minimum, we need to know whether the property succeeded or failed, so a `Boolean` return value would do just fine as a first pass.
+
+Assuming the following representation, use `check` to implement `and` as a method of `Prop`:
+
+[source, kotlin]
+----
+interface Prop {
+    fun check(): Boolean
+    fun and(p: Prop): Prop =
+        SOLUTION_HERE()
+}
+----
+
+IMPORTANT: xref:../../../test/kotlin/chapter8/exercises/ex3/listing.kt[]
+
+In this representation, `Prop` is nothing more than a non-strict `Boolean`. ... But a `Boolean` alone is probably insufficient. If a property fails, we might want to know how many tests succeeded first. We might also be interested in what arguments produced the failure. And if a property succeeds, it would be useful to know how many tests it ran. Next, let’s encode this information by returning an Either to indicate success or failure:
+
+[source, kotlin]
+----
+typealias SuccessCount = Int
+
+interface Prop {
+    fun check(): Either<String, SuccessCount>
+    fun and(p: Prop): Prop
+}
+----
+
+For now, we’ve assigned the failure case to be a `String`, but what type should we return? We don’t know anything about the type of test cases being generated. Should we add a type parameter to `Prop` and make it `Prop<A>` so check could return `Either<A, SuccessCount>`?
+
+Do we care about the type of value that caused the property to fail? We would only care about the type if we were going to do further computation with the failure. Most likely, we’re just going to end up printing it to the screen for inspection by whoever runs the tests. After all, the goal here is to find bugs and indicate test cases that triggered them to be fixed.
+
+[source, kotlin]
+----
+typealias SuccessCount = Int
+typealias FailedCase = String
+
+interface Prop {
+    fun check(): Either<Pair<FailedCase, SuccessCount>, SuccessCount>
+    fun and(p: Prop): Prop
+}
+----
+
+Currently, the check method takes no arguments. Is this sufficient? Since check is a method on `Prop`, we can think about what information is available to it at its creation. In particular, let’s take another look at `forAll`:
+
+[source, kotlin]
+----
+fun <A> forAll(a: Gen<A>, f: (A) -> Boolean): Prop = TODO()
+----
+
+Without knowing more about the representation of `Gen`, it is hard to say whether there is enough information here to be able to generate values of type A. Why is this important? We will need this information to implement check. So, for now, we’ll take a step back and turn our attention to Gen to get a better idea of what it means and what its dependencies might be.
+
+=== 8.2.3 Discovering the meaning and API of generators
+
+`Gen<A>` knows how to generate values of type A. How could it go about doing this? Well, it could _randomly generate_ these values. Thinking back to chapeter 6, we provided an interface for a purely functional random number generator, `RNG`. We then showed how to make it convenient to combine computations that use it. If we recall the definition of `State`, we can simply make `Gen` a type that wraps a `State` transition over a random number generator.
+
+[source, kotlin]
+----
+interface RNG {
+    fun nextInt(): Pair<Int, RNG>
+}
+
+data class State<S, out A>(val run: (S) -> Pair<A, S>)
+
+data class Gen<A>(val sample: State<RNG, A>)
+----
+
+NOTE: See xref:./Boilerplate.kt[]
+
+
+
+Implement `Gen.choose` using this representation of `Gen`. It should generate integers in the range start to stopExclusive. Feel free to use functions you’ve already written.
+
+[source, kotlin]
+----
+fun choose(start: Int, stopExclusive: Int): Gen<Int> =
+
+    SOLUTION_HERE()
+----
+
+IMPORTANT: xref:../../../test/kotlin/chapter8/exercises/ex4/listing.kt[]
+
+Try implementing `unit`, `boolean`, and `listOfN` with the following signatures, once again drawing on previously written functions:
+
+[source, kotlin]
+----
+fun <A> unit(a: A): Gen<A> =
+fun boolean(): Gen<Boolean> =
+fun <A> listOfN(n: Int, ga: Gen<A>): Gen<List<A>> =
+----
+
+IMPORTANT: xref:../../../test/kotlin/chapter8/exercises/ex5/listing.kt[]
+
+...we’re interested in understanding which operations are _primitive_ and which are _derived_ and finding a small yet expressive set of primitives. An excellent way to explore what is possible with a given set of primitives is to pick concrete examples you’d like to express and see if you can assemble the functionality you want. As you do so, look for patterns, try factoring out these patterns into combinators, and refine your set of primitives.
+
+* If we can generate a single `Int` in some range, do we also need a new primitive to generate a `Pair<Int, Int>` in some range?
+* Can we produce a `Gen<Option<A>>` from a `Gen<A>`? What about a `Gen<A>` from `Gen<Option<A>>`?
+* Can we generate strings using our existing primitives?.
+
+=== 8.2.4 Generators that depend on generated values
+
+Suppose we’d like a `Gen<Pair<String, String>>` that generates pairs where the second string contains only characters from the first. Or suppose we have a `Gen<Int>` that chooses an integer between 0 and 11, and we’d like to make a `Gen<List<Double>>` that then generates lists of whatever length is chosen. There’s a *dependency* in both of these cases: we generate a value and then use that value to determine what generator to use next.
+
+
+Implement `flatMap`, and then use it to implement this more dynamic version of `listOfN`
+
+[source, kotlin]
+----
+data class Gen<A>(val sample: State<RNG, A>) {
+
+    companion object {
+        fun <A> listOfN(gn: Gen<Int>, ga: Gen<A>): Gen<List<A>> =
+
+            SOLUTION_HERE()
+    }
+
+    fun <B> flatMap(f: (A) -> Gen<B>): Gen<B> =
+
+        SOLUTION_HERE()
+}
+----
+
+IMPORTANT: xref:../../../test/kotlin/chapter8/exercises/ex6/listing.kt[]
+
+
+Implement `union` for combining two generators of the same type into one by pulling values from each generator with equal likelihood.
+
+[source, kotlin]
+----
+fun <A> union(ga: Gen<A>, gb: Gen<A>): Gen<A> =
+
+    SOLUTION_HERE()
+----
+
+IMPORTANT: xref:../../../test/kotlin/chapter8/exercises/ex7/listing.kt[]
+
+
+
+Implement `weighted`, a version of `union` that accepts a weight for each `Gen` and generates values from each `Gen` with probability proportional to its weight.
+
+[source, kotlin]
+----
+fun <A> weighted(
+    pga: Pair<Gen<A>, Double>,
+    pgb: Pair<Gen<A>, Double>
+): Gen<A> =
+
+    SOLUTION_HERE()
+----
+
+IMPORTANT: xref:../../../test/kotlin/chapter8/exercises/ex8/listing.kt[]
+
+=== 8.2.5 Refining the property data type
+
+Our `Gen` representation has revealed information about the requirements for `Prop`.
+
+[source, kotlin]
+----
+interface Prop {
+    fun check(): Either<Pair<FailedCase, SuccessCount>, SuccessCount>
+}
+----
+
+At this point, `Prop` is nothing more than an `Either`. We have the number of successful test cases in `SuccessCount`, but we haven’t specified how many test cases to examine before considering the property to have passed the test. We could undoubtedly hardcode a value, but it would be far better to abstract over this detail. We will do so by injecting an integer aliased as `TestCases`. We will also turn `Prop` into a data class and make check a value instead of a method:
+
+[source, kotlin]
+----
+typealias SuccessCount = Int
+typealias FailedCase = String
+typealias TestCases = Int
+
+typealias Result = Either<Pair<FailedCase, SuccessCount>, SuccessCount>
+
+data class Prop(val check: (TestCases) -> Result)
+----
+
+Also, we’re recording the number of successful tests on both sides of `Either`. But when a property passes, it’s implied that the number of passed tests will be equal to the argument to check:
+
+[source, kotlin]
+----
+typealias SuccessCount = Int
+typealias FailedCase = String
+typealias TestCases = Int
+
+typealias Result = Option<Pair<FailedCase, SuccessCount>>
+
+data class Prop(val check: (TestCases) -> Result)
+----
+
+This seems a bit weird since `None` will mean all tests succeeded and `Some` will indicate a failure. Until now, we’ve only used the `None` case of `Option` to indicate failure; but in this case, we’re using it to represent the absence of a failure. That is a perfectly legitimate use for `Option`, but its intent isn’t obvious. So let’s make a new data type equivalent to `Option<Pair<FailedCase, SuccessCount>>` that makes our intent more explicit.
+
+[source, kotlin]
+----
+typealias SuccessCount = Int
+typealias FailedCase = String
+typealias TestCases = Int
+
+sealed class Result {
+    abstract fun isFalsified(): Boolean
+}
+
+object Passed : Result() {
+    override fun isFalsified(): Boolean = false
+}
+
+data class Falsified(
+    val failure: FailedCase,
+    val successes: SuccessCount
+) : Result() {
+    override fun isFalsified(): Boolean = true
+}
+
+data class Prop(val check: (TestCases) -> Result)
+----
+
+Is this a sufficient representation of `Prop` now? Can `forAll` be implemented? If not, why not?
+
+[source, kotlin]
+----
+fun <A> forAll(a: Gen<A>, f: (A) -> Boolean): Prop = TODO()
+----
+
+As we can see, `forAll` doesn’t have enough information to return a Prop. Besides the number of test cases to try, `check` must have all the information needed to generate test cases. If it needs to generate random test cases using our current representation of `Gen`, it will need an `RNG`
+
+[source, kotlin]
+----
+typealias TestCases = Int
+
+data class Prop(val check: (TestCases, RNG) -> Result)
+----
+
+==== forall:
+
+[source, kotlin]
+----
+fun <A> forAll(ga: Gen<A>, f: (A) -> Boolean): Prop =
+    Prop { n: TestCases, rng: RNG ->
+        randomSequence(ga, rng).mapIndexed { i, a ->
+            try {
+                if (f(a)) Passed
+                else Falsified(a.toString(), i)
+            } catch (e: Exception) {
+                Falsified(buildMessage(a, e), i)
+            }
+        }.take(n)
+            .find { it.isFalsified() }
+            .toOption()
+            .getOrElse { Passed }
+    }
+
+private fun <A> randomSequence(
+    ga: Gen<A>,
+    rng: RNG
+): Sequence<A> =
+    sequence {
+        val (a: A, rng2: RNG) = ga.sample.run(rng)
+        yield(a)
+        yieldAll(randomSequence(ga, rng2))
+    }
+
+private fun <A> buildMessage(a: A, e: Exception) =
+    """
+    |test case: $a
+    |generated and exception: ${e.message}
+    |stacktrace:
+    |${e.stackTrace.joinToString("\n")}
+""".trimMargin()
+----
+
+Now that we have a representation of `Prop`, implement `and` and `or` for composing `Prop` values. Notice that in the case of an or failure, we don’t know which property was responsible, the left or the right. Can you devise a way of handling this?
+
+[source, kotlin]
+----
+typealias TestCases = Int
+
+data class Prop(val run: (TestCases, RNG) -> Result) {
+    fun and(p: Prop): Prop =
+    fun or(p: Prop): Prop =
+}
+----
+
+IMPORTANT: xref:../../../test/kotlin/chapter8/exercises/ex9/listing.kt[]
+
+
+== 8.3 Test case minimization
+
+... find the smallest or simplest failing test case ...
+
+2 general approaches:
+
+* *Shrinking*: After we’ve found a failing test case, we can run a _separate_ procedure to minimize the test case by successively decreasing its “size” until it no longer fails. (Kotest)
+* *Sized generation*: generate our test cases in order of increasing size and complexity. So we start small and increase the size until we find a failure. (us)
+
+=== SGen
+Let’s introduce sized generation as a separate layer in our library. A simple representation of a sized generator is a function that takes a size and produces a generator.
+
+[source, kotlin]
+----
+data class SGen<A>(val forSize: (Int) -> Gen<A>)
+----
+
+Implement a helper function called `unsized` for converting `Gen` to `SGen`. You can add this as a method on Gen.
+
+[source, kotlin]
+----
+data class Gen<A>(val sample: State<RNG, A>) {
+    fun unsized(): SGen<A> =
+}
+----
+IMPORTANT: xref:../../../test/kotlin/chapter8/exercises/ex10/listing.kt[]
+
+Define some convenience functions on `SGen` that simply delegate to the corresponding functions on `Gen`. Also provide a convenient way of invoking an `SGen`.
+
+[source, kotlin]
+----
+data class SGen<A>(val forSize: (Int) -> Gen<A>) {
+    operator fun invoke(i: Int): Gen<A> =
+    fun <B> map(f: (A) -> B): SGen<B> =
+    fun <B> flatMap(f: (A) -> Gen<B>): SGen<B> =
+}
+----
+IMPORTANT: xref:../../../test/kotlin/chapter8/exercises/ex11/listing.kt[]
+
+> Note that even though this approach is very repetitive, we will continue doing it this way for now. Part 3 of this book presents a better approach to handling such repetition.
+
+Implement a `listOf` combinator on `Gen` that doesn’t accept an explicit size and should return an `SGen` instead of a `Gen`. The implementation should generate lists of the size provided to the `SGen`.
+
+[source, kotlin]
+----
+fun listOf(): SGen<List<A>> =
+----
+
+IMPORTANT: xref:../../../test/kotlin/chapter8/exercises/ex12/listing.kt[]
+
+=== forAll
+
+The `SGen` version of `forAll` looks like this:
+
+[source, kotlin]
+----
+fun <A> forAll(g: SGen<A>, f: (A) -> Boolean): Prop = TODO()
+----
+
+We see that it isn’t possible to implement it:
+
+`SGen` is expecting to be told a size, `but` Prop doesn’t receive any such information.
+
+-> We need to add this new number as a dependency to the function. Since we want to put `Prop` in charge of invoking the underlying generators with various sizes, we’ll have `Prop` accept a _maximum size_. `Prop` will then generate test cases up to and including the maximum specified size. An additional benefit is that this will also allow it to search for the smallest failing test case.
+
+[source, kotlin]
+----
+typealias MaxSize = Int
+typealias TestCases = Int
+
+data class Prop(val check: (MaxSize, TestCases, RNG) -> Result) {
+
+    companion object {
+
+        fun <A> forAll(g: SGen<A>, f: (A) -> Boolean): Prop =
+            forAll({ i -> g(i) }, f)
+
+        fun <A> forAll(g: (Int) -> Gen<A>, f: (A) -> Boolean): Prop =
+            Prop { max, n, rng ->
+
+                val casePerSize: Int = (n + (max - 1)) / max
+
+                val props: Sequence<Prop> =
+                    generateSequence(0) { it + 1 }
+                        .take(min(n, max) + 1)
+                        .map { i -> forAll(g(i), f) }
+
+                val prop: Prop = props.map { p ->
+                    Prop { max, _, rng ->
+                        p.check(max, casePerSize, rng)
+                    }
+                }.reduce { p1, p2 -> p1.and(p2) }
+
+                prop.check(max, n, rng)
+            }
+
+    }
+
+    fun and(p: Prop): Prop =
+        Prop { max, n, rng ->
+            when (val prop = check(max, n, rng)) {
+                is Passed -> p.check(max, n, rng)
+                is Falsified -> prop
+            }
+        }
+}
+----
+
+
+. `check` now has a new `MaxSize` parameter that sets an upper bound on the size of test cases to run.
+. Our `forAll` entry point takes an `SGen` and a predicate that is passed through to our new `forAll` function and, in turn, generates a combined `Prop`.
+. This property first calculates the number of test cases to run per size. It then generates a `Sequence` consisting of one `Prop` per size using the previously defined `forAll` function.
+. Finally, it combines them all into a single property using an updated version of our previously defined and function.
+. At the end of all this, the remaining reduced property is checked.
+
+== 8.4 Using the library and improving the user experience
+
+
+=== 8.4.1 Some simple examples
+
+specifying the behavior of a function `max`, available as a method on `List<Int>`.
+
+The maximum of a list should be greater than or equal to every other element in the list.
+
+[source, kotlin]
+----
+val smallInt = Gen.choose(-10, 10)
+
+val maxProp = forAll(SGen.listOf(smallInt)) { ns ->
+    val mx = ns.max() ?: throw IllegalStateException("max on empty list")
+    !ns.exists { it > mx }
+}
+----
+
+At this point, calling `check` directly on a Prop is rather cumbersome.
+
+[source, kotlin]
+----
+data class Prop(val check: (MaxSize, TestCases, RNG) -> Result)
+
+fun run(
+    p: Prop,
+    maxSize: Int = 100,
+    testCases: Int = 100,
+    rng: RNG = SimpleRNG(System.currentTimeMillis())
+): Unit =
+    when (val result = p.check(maxSize, testCases, rng)) {
+        is Falsified ->
+            println(
+                "Falsified after ${result.successes}" +
+                    "passed tests: ${result.failure}"
+            )
+        is Passed ->
+            println("OK, passed $testCases tests.")
+    }
+----
+
+If we try running `run(maxProp)`, we notice that the property fails!
+
+    Falsified after 0 passed tests: test case: []
+    generated and exception: max on empty list
+    stacktrace:
+
+Property-based testing has a way of revealing hidden assumptions about our code and forcing us to be more explicit about these assumptions. The standard library’s implementation of `max` returns `null` when dealing with empty lists, which we interpreted as an `IllegalStateException`.
+
+Define `nonEmptyListOf` for generating nonempty lists, and then update your specification of max to use this generator.
+
+[source, kotlin]
+----
+fun <A> nonEmptyListOf(ga: Gen<A>): SGen<List<A>> =
+
+fun maxProp(): Prop =
+----
+IMPORTANT: xref:../../../test/kotlin/chapter8/exercises/ex13/listing.kt[]
+
+
+
+=== 8.4.2 Writing a test suite for parallel computations
+
+[source, kotlin]
+----
+typealias Par<A> = (ExecutorService) -> Future<A>
+fun <A> unit(a: A): Par<A> =
+----
+
+> Recall that in chapter 7, we discovered *laws* that should hold true for our parallel computations.
+
+[source, kotlin]
+----
+map(unit(1)) { it + 1 } == unit(2)
+----
+
+
+We certainly can express this, but the result is somewhat ugly, ...
+
+[source, kotlin]
+----
+val es = Executors.newCachedThreadPool()
+val p1 = forAll(Gen.unit(Pars.unit(1))) { pi ->
+    map(pi, { it + 1 })(es).get() == Pars.unit(2)(es).get()
+}
+----
+
+-> verbose and cluttered, ... obscured by irrelevant detail.
+
+
+==== Proving properties
+
+let’s improve on this verbosity and clutter: ... `forAll` is a bit too general for this test case.
+
+Let’s introduce a combinator for it on the `Prop` companion object:
+
+[source, kotlin]
+----
+fun check(p: () -> Boolean): Prop = TODO()
+----
+
+How would we implement this? One possible way is to use `forAll`:
+
+[source, kotlin]
+----
+fun check(p: () -> Boolean): Prop {
+    val result by lazy { p() }
+    return forAll(Gen.unit(Unit)) {
+        result
+    }
+}
+----
+
+This doesn’t seem quite right. We’re providing a unit generator that only generates a single Unit value. Then we proceed by ignoring that value just to force evaluation of the given Boolean. Not great.
+
+-> What we need is a new primitive.
+
+The representation of `Prop` that we have so far is just a function of type `(MaxSize, TestCases, RNG) -> Result`, where `Result` is either `Passed` or `Falsified`. A simple implementation of a check primitive is to construct a Prop that ignores the number of test cases:
+
+[source, kotlin]
+----
+fun check(p: () -> Boolean): Prop =
+    Prop { _, _, _ ->
+        if (p()) Passed
+        else Falsified("()", 0)
+    }
+----
+
+This is certainly better than using forAll, but `run(check(true))` will still print “passed 100 tests” even though it only tests the property once. It’s not really true that such a property has “passed” in the sense that it remains unfalsified after several tests. It is _proved_ after just one test.
+
+-> we want a new kind of `Result`.
+
+[source, kotlin]
+----
+object Proved : Result()
+----
+
+We need to modify the test runner:
+
+[source, kotlin]
+----
+fun run(
+    p: Prop,
+    maxSize: Int = 100,
+    testCases: Int = 100,
+    rng: RNG = SimpleRNG(System.currentTimeMillis())
+): Unit =
+    when (val result = p.run(maxSize, testCases, rng)) {
+        is Falsified ->
+            println(
+                "Falsified after ${result.successes} passed tests: " +
+                        result.failure
+            )
+        is Passed ->
+            println("OK, passed $testCases tests.")
+        is Proved ->
+            println("OK, proved property.")
+    }
+----
+
+We also need to modify our implementations of `Prop` combinators like `and`:
+
+[source, kotlin]
+----
+fun and(p: Prop) =
+    Prop { max, n, rng ->
+        when (val prop = run(max, n, rng)) {
+            is Falsified -> prop
+            else -> p.run(max, n, rng)
+        }
+    }
+
+----
+
+==== Testing Par
+
+-> proving the property that `map(unit(1)) { it + 1 }` is equal to `unit(2)`:
+
+[source, kotlin]
+----
+val p = check {
+    val p1 = map(unit(1)) { it + 1 }
+    val p2 = unit(2)
+    p1(es).get() == p2(es).get()
+}
+----
+
+This is now pretty clear. But can we do something about the noise of `p1(es).get()` and `p2(es).get()`?
+
+One improvement is to `lift` the equality comparison into `Par` using `map2`, which means we only have to run a single `Par` at the end to get our result:
+
+[source, kotlin]
+----
+fun <A> equal(p1: Par<A>, p2: Par<A>): Par<Boolean> =
+    map2(p1, p2, { a, b -> a == b })
+
+val p = check {
+    val p1 = map(unit(1)) { it + 1 }
+    val p2 = unit(2)
+    equal(p1, p2)(es).get()
+}
+----
+
+-> while we’re at it, why don’t we move the running of `Par` into a separate function called `forAllPar`?
+
+[source, kotlin]
+----
+val ges: Gen<ExecutorService> = weighted(
+    Gen.choose(1, 4).map {
+        Executors.newFixedThreadPool(it)
+    } to .75,
+    Gen.unit(
+        Executors.newCachedThreadPool()
+    ) to .25)
+
+fun <A> forAllPar(ga: Gen<A>, f: (A) -> Par<Boolean>): Prop =
+    forAll(
+        map2(ges, ga) { es, a -> es to a }
+    ) { (es, a) -> f(a)(es).get() }
+
+----
+
+The value `ges` is a `Gen<ExecutorService>` that will vary over fixed-size thread pools from one to four threads and consider an unbounded thread pool.
+
+Next, let’s focus our attention on `map2(ges, ga) { es, a -> es to a }`. This is a rather noisy way of combining two generators to produce a pair of their outputs. Let’s introduce a combinator to clean up this mess:
+
+[source, kotlin]
+----
+fun <A, B> combine(ga: Gen<A>, gb: Gen<B>): Gen<Pair<A, B>> =
+    map2(ga, gb) { a, b -> a to b }
+----
+
+This already feels a lot better and less clunky!
+
+[source, kotlin]
+----
+fun <A> forAllPar(ga: Gen<A>, f: (A) -> Par<Boolean>): Prop =
+    forAll(
+        combine(ges, ga)
+    ) { esa ->
+        val (es, a) = esa
+        f(a)(es).get()
+    }
+----
+
+Even though this is better, we haven’t arrived yet. We can make it even easier and more natural to use by applying some features in our Kotlin bag of tricks:
+
+[source, kotlin]
+----
+infix fun <A, B> Gen<A>.combine(gb: Gen<B>): Gen<Pair<A, B>> =
+    map2(this, gb) { s, a -> s to a }
+----
+
+This in turn gives us a far more fluid expression:
+
+[source, kotlin]
+----
+fun <A> forAllPar(ga: Gen<A>, f: (A) -> Par<Boolean>): Prop =
+    forAll(ges combine ga) { (es, a) ->
+        f(a)(es).get()
+    }
+----
+
+We can now go ahead and use our new property to implement `checkPar`, which in turn consumes `Par<Boolean>` as emitted by `Par.equal` from chapter 7. All of this combined means a better experience for the users of our library:
+
+[source, kotlin]
+----
+fun checkPar(p: Par<Boolean>): Prop =
+    forAllPar(Gen.unit(Unit)) { p }
+
+val p2 = checkPar(
+    equal(
+        map(unit(1)) { it + 1 },
+        unit(2)
+    )
+)
+----
+
+-> The helper functions we’ve written make the properties easier to read and more pleasant to work with.
+
+
+Let’s look at some other properties from chapter 7. Recall that we generalized our test case:
+
+[source, kotlin]
+----
+map(unit(x), f) == unit(f(x))
+----
+
+
+We then simplified it to the law that mapping the identity function over a computation should have no effect:
+
+[source, kotlin]
+----
+map(y, id) == y
+----
+
+Can we express this? Not exactly. This property implicitly states that the equality holds for all choices of y, for all types. We’re forced to pick particular values for y:
+
+[source, kotlin]
+----
+val pint: Gen<Par<Int>> =
+    Gen.choose(0, 10).map {
+        unit(it)
+    }
+
+val p = forAllPar(pint) { n ->
+    equal(map(n) { it }, n)
+}
+----
+
+
+We can undoubtedly range over more choices of y, but what we have here is probably good enough
+
+== 8.5 Generating higher-order functions and other possibilities
+
+-> we don’t have an excellent way to test higher-order functions (HOFs). While we have many ways of generating data using our generators, we don’t really have a good way of generating functions.
+
+For instance, let’s consider the `takeWhile` function defined for `List` and `Sequence`. Recall that this function returns the longest prefix of its input whose elements all satisfy a predicate. For instance, `listOf(1,2,3).takeWhile { it < 3 }` results in `List(1,2)`.
+
+A simple property we’d like to check is that for any list `s: List<A>` and any `f: (A) -> Boolean`, the expression `s.takeWhile(f).forAll(f)` evaluates to `true`. That is, every element in the returned list satisfies the predicate
+
+Come up with some other properties that `takeWhile` should satisfy. Can you think of a good property expressing the relationship between `takeWhile` and `dropWhile`?
+
+IMPORTANT: xref:../../../test/kotlin/chapter8/solutions/ex17/listing.kt[]
+
+
+We could certainly take the approach of examining only _particular_ arguments when testing HOFs. For instance, here’s a more specific property for takeWhile:
+
+[source, kotlin]
+----
+val isEven = { i: Int -> i % 2 == 0 }
+
+val takeWhileProp =
+    Prop.forAll(Gen.listOfN(n, ga)) { ns ->
+        ns.takeWhile(isEven).forAll(isEven)
+    }
+----
+
+This works, but is there a way to let the testing framework handle generating functions to use with `takeWhile` instead?
+
+Suppose we have a `Gen<Int>` and would like to produce a `Gen<(String) -> Int>`.
+
+-> we could produce `(String) -> Int` functions that simply ignore their input string and delegate to the underlying `Gen<Int>`:
+
+[source, kotlin]
+----
+fun genStringIntFn(g: Gen<Int>): Gen<(String) -> Int> =
+    g.map { i -> { _: String -> i } }
+----
+
+This approach isn’t really sufficient. We’re simply generating constant functions that ignore their input.
+
+In the case of `takeWhile`, where we need a function that returns a `Boolean`, the function will always return true or false depending on what the underlying boolean generator passes it:
+
+[source, kotlin]
+----
+fun genIntBooleanFn(g: Gen<Boolean>): Gen<(Int) -> Boolean> =
+    g.map { b: Boolean -> { _: Int -> b } }
+----
+
+Now, let’s consider the following function, which returns a function generator that performs some logic based on a value passed to it. In this case, a `threshold t` is passed, and any `Int` injected into the function will be tested to see if the value exceeds `t`:
+
+[source, kotlin]
+----
+fun genIntBooleanFn(t: Int): Gen<(Int) -> Boolean> =
+    Gen.unit { i: Int -> i > t }
+----
+
+Let’s put our new function generator to work. We begin by generating a `List<Int>` as well as a random threshold value. We preload our function generator with the given random threshold and let it produce its function of `(Int) -> Boolean`. Finally, we apply this generated function to `takeWhile` on our generated list and then apply the same predicate to `forAll`, which should always result in true:
+
+[source, kotlin]
+----
+val gen: Gen<Boolean> =
+    Gen.listOfN(100, Gen.choose(1, 100)).flatMap { ls: List<Int> ->
+        Gen.choose(1, ls.size / 2).flatMap { threshold: Int ->
+            genIntBooleanFn(threshold).map { fn: (Int) -> Boolean ->
+                ls.takeWhile(fn).forAll(fn)
+            }
+        }
+    }
+----
+
+When run in the context of our test harness using Prop.forAll, we should always see the test passing:
+
+[source, kotlin]
+----
+run(Prop.forAll(gen) { success -> success })
+----
+
+Even though this example is somewhat contrived and trivial, it sufficiently demonstrates what is possible in terms of random function generators.
+
+
+== 8.6 The laws of generators
+
+-> we see patterns emerging that we’ve come across in previous chapters
+
+[source, kotlin]
+----
+fun <A, B> map(a: Par<A>, f: (A) -> B): Par<B> = TODO()
+----
+
+And in this chapter, we defined map for Gen (as a method on Gen<A>):
+
+[source, kotlin]
+----
+fun <A, B> map(a: Gen<A>, f: (A) -> B): Gen<B> = TODO()
+----
+
+We’ve also defined similar-looking functions for `Option`, `List`, `Stream`, and `State`.
+
+We have to wonder: is it merely that our functions share similar-looking signatures? Or do they satisfy the same laws as well?
+
+Let’s look at a law we introduced for Par in chapter 7:
+
+[source, kotlin]
+----
+map(y, id) == y
+----
+
+
+Does this law hold true for our implementation of `Gen.map`? What about for `Stream, List, Option, and State`?
+
+Yes, it does!
+
+Try it and see.
+
+This indicates that these functions share similar-looking signatures. They also, in some sense, have similar _meanings_ in their respective domains. __It appears that deeper forces are at work! __ We’re uncovering some fundamental patterns that cut across all these domains.
+
+
+Let’s reiterate. The goal was not necessarily to learn about property-based testing as such, but rather to highlight particular aspects of functional design.
+
+First, we saw that oscillating between the abstract algebra and the concrete representation lets the two inform each other. This avoids overfitting the library to a particular representation and also avoids a disconnected abstraction that is far removed from the end goal.
+
+Second, we noticed that this domain led us to discover many of the same combinators we’ve seen a few times before: `map`, `flatMap`, and so on. The signatures of these functions are analogous, but the laws satisfied by the implementations are analogous too. There are many seemingly different problems being solved in the software world, yet the space of functional solutions is much smaller. Many libraries are just simple combinations of specific fundamental structures that repeatedly appear across various domains.
+

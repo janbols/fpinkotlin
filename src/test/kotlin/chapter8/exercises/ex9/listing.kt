@@ -32,5 +32,16 @@ data class Prop(val run: (TestCases, RNG) -> Result) {
     fun or(p: Prop): Prop =
 
         SOLUTION_HERE()
+
+    private fun tag(msg: String) = Prop { n, rng ->
+        when (val result = run(n, rng)) {
+            is Falsified -> Falsified(
+                "$msg: ${result.failure}",
+                result.successes
+            )
+            is Passed -> result
+        }
+    }
+
 }
 //end::init[]

@@ -25,27 +25,27 @@ data class Falsified(
 //tag::init[]
 data class Prop(val run: (TestCases, RNG) -> Result) {
     fun and(other: Prop) = Prop { n, rng ->
-        when (val prop = run(n, rng)) {
+        when (val result = run(n, rng)) {
             is Passed -> other.run(n, rng)
-            is Falsified -> prop
+            is Falsified -> result
         }
     }
 
     fun or(other: Prop) = Prop { n, rng ->
-        when (val prop = run(n, rng)) {
+        when (val result = run(n, rng)) {
             is Falsified ->
-                other.tag(prop.failure).run(n, rng)
-            is Passed -> prop
+                other.tag(result.failure).run(n, rng)
+            is Passed -> result
         }
     }
 
     private fun tag(msg: String) = Prop { n, rng ->
-        when (val prop = run(n, rng)) {
+        when (val result = run(n, rng)) {
             is Falsified -> Falsified(
-                "$msg: ${prop.failure}",
-                prop.successes
+                "$msg: ${result.failure}",
+                result.successes
             )
-            is Passed -> prop
+            is Passed -> result
         }
     }
 }
