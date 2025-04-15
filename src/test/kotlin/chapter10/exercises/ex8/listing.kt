@@ -1,8 +1,11 @@
 package chapter10.exercises.ex8
 
 import chapter10.Monoid
+import chapter10.solutions.ex8.parFoldMap
 import chapter10.stringMonoid
 import chapter7.sec4_4.Par
+import chapter7.sec4_4.splitAt
+import chapter7.sec4_4.unit
 import io.kotlintest.TestCase
 import io.kotlintest.TestResult
 import io.kotlintest.specs.WordSpec
@@ -21,8 +24,14 @@ fun <A, B> parFoldMap(
     pm: Monoid<Par<B>>,
     f: (A) -> B
 ): Par<B> =
-
-    SOLUTION_HERE()
+    when {
+        la.size >= 2 -> {
+            SOLUTION_HERE()
+        }
+        la.size == 1 ->
+            SOLUTION_HERE()
+        else -> pm.nil
+    }
 //end::init1[]
 
 //TODO: Enable tests by removing `!` prefix

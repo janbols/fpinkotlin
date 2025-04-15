@@ -8,15 +8,15 @@ import utils.SOLUTION_HERE
 interface Foldable<F> {
 
     fun <A, B> foldRight(fa: Kind<F, A>, z: B, f: (A, B) -> B): B =
-
+        //foldMap(...
         SOLUTION_HERE()
 
     fun <A, B> foldLeft(fa: Kind<F, A>, z: B, f: (B, A) -> B): B =
-
+        //foldMap(...
         SOLUTION_HERE()
 
     fun <A, B> foldMap(fa: Kind<F, A>, m: Monoid<B>, f: (A) -> B): B =
-
+        //foldRight(...
         SOLUTION_HERE()
 }
 //end::init1[]

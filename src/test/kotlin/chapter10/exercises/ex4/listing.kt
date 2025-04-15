@@ -15,10 +15,22 @@ import utils.SOLUTION_HERE
 fun <A> monoidLaws(m: Monoid<A>, gen: Gen<A>): Prop =
 
     SOLUTION_HERE()
+
+//    forAll(
+//    gen.flatMap { a ->
+//        gen.flatMap { b ->
+//            gen.map { c ->
+//                Triple(a, b, c)
+//            }
+//        }
+//    }
+//    ) { (a, b, c) ->
+//        ...
+//    }
+
 //end::init1[]
 
 //tag::init2[]
-//TODO: Enable tests by removing `!` prefix
 class Exercise4 : WordSpec({
     val max = 100
     val count = 100

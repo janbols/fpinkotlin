@@ -1,0 +1,243 @@
+= Appendic C: higher kind
+:toc:
+:icons: font
+:url-quickref: https://livebook.manning.com/book/functional-programming-in-kotlin/appendix-c/
+
+{url-quickref}[See chapter online chapter].
+
+Higher-kinded types are an *advanced language feature* that languages like Kotlin and Java *do not support*.
+
+The Arrow team has gone to great lengths to make this feature as easy to use as possible.
+
+== C.1 A compiler workaround
+
+Let’s look at the `Foldable` interface as an example of a higher-kinded type. We declare a new instance of this interface that is a `ListFoldable`, a `Foldable` of the `List` type. Let’s express this exact situation with a snippet of pseudocode:
+
+[source, kotlin]
+----
+interface Foldable<F<A>> {
+//some abstract methods
+}
+
+object ListFoldable : Foldable<List<A>> {
+//some method implementations with parameterized A
+}
+----
+
+We are dealing with a *type constructor* that is a `Foldable` of `F<A>`, which in our case is a `List<A>` but could also be a `Stream<A>`, `Option<A>`, or something else depending on the implementation. Notice the _two levels of generics_: `F` and `A` or, more concretely, `List<A>` in our implementation.
+
+NOTE: This nesting of kinds can’t be expressed in Kotlin and will cause a compilation failure.
+
+Arrow has solved this inability to express `F<A>` through the use of an interface called `Kind<F, A>`. There is nothing special about this interface, and we could easily have written it ourselves:
+
+[source, kotlin]
+----
+interface Kind<out F, out A>
+----
+
+In addition, we need some boilerplate code to go with the `Kind` interface. We begin by introducing a _surrogate type_. In the case of our `Foldable` example, we require a surrogate placeholder named `ForList`. This can be used to express `Foldable<List<A>>` as `Foldable<ForList>`, thus doing away with the illegal nested generic type `A` that broke compilation. The `ForList` type is a reference to a _dummy class_ that is defined as follows:
+
+[source, kotlin]
+----
+class ForList private constructor() { companion object }
+----
+
+In specialized implementations such as `ListFoldable`, we often refer to the higher kind in the methods we define. In the case of `foldRight`, we would use `ForList` while keeping the nested type `A` generic:
+
+[source, kotlin]
+----
+fun <A, B> foldRight(fa: Kind<ForList, A>, z: B, f: (A, B) -> B): B
+----
+
+This is ugly, so let’s add some syntactic sugar to smooth it over:
+
+[source, kotlin]
+----
+typealias ListOf<A> = Kind<ForList, A>
+----
+
+We also need to _extend_ our `List` data type from `ListOf` to allow *downcasting* from `ListOf` to `List`. This is required because we often need to refer to the concrete type when we access methods on that type:
+
+[source, kotlin]
+----
+sealed class List<out A> : ListOf<A>
+----
+
+NOTE: This boilerplate code is required for _every_ data type to be used as a higher kind. This example assumes `List`, but what if we were dealing with the `Option` type? Instead of `ForList` and `ListOf`, we are expected to provide `ForOption` and `OptionOf`.
+
+We now have almost everything in place to express our higher-kinded type as something that extends `Foldable<ForList>` for a `Foldable` of the `List` type:
+
+[source, kotlin]
+----
+object ListFoldable : Foldable<ForList> {
+}
+----
+
+Let’s use this to express some of the foldable functionality inherited from the `Foldable<F>` interface. For instance, let’s consider the `foldRight` method with the following declaration:
+
+[source, kotlin]
+----
+interface Foldable<F> {
+    fun <A, B> foldRight(fa: Kind<F, A>, z: B, f: (A, B) -> B): B
+    }
+----
+
+It takes a type of `Kind<F, A>` representing an `F<A>`, which is the abstract form of what we will override in our implementation. Our implementation will have a method with a signature as follows:
+
+[source, kotlin]
+----
+fun <A, B> foldRight(fa: ListOf<A>, z: B, f: (A, B) -> B): B
+----
+
+NOTE: we are now using `ListOf<A>` instead of `Kind<F, A>`, which is a type alias for `Kind<ForList, A>`!
+
+The last piece of the puzzle involves the ability to cast from this higher- kinded type back down to a concrete implementation. We do this by introducing an extension method called `fix` on `ListOf` to turn it back into a concrete `List`. This, combined with how we extended the `List` data type from `ListOf`, allows us to cast both ways:
+
+[source, kotlin]
+----
+fun <A> ListOf<A>.fix() = this as List<A>
+----
+
+
+We can now operate on the `ListOf<A>` instance as `List<A>` using `fix` when implementing methods such as `foldRight` in `Foldable`. In this particular case, we choose to call the `foldRight` method on the concrete `List` to achieve our purpose:
+
+[source, kotlin]
+----
+object ListFoldable : Foldable<ForList> {
+
+    override fun <A, B> foldRight(
+        fa: ListOf<A>,
+        z: B,
+        f: (A, B) -> B
+    ): B =
+        fa.fix().foldRight(z, f)
+}
+----
+
+In doing so, we have managed to implement a higher-kinded type of `List` in the Kotlin language—thanks to some fairly straightforward boilerplate code! We don’t even need a third-party library like Arrow if we provide our own `Kind` interface. We can easily do the same for any other type of `Foldable` that works with `Option`, `Stream`, or another type.
+
+Still, this is a fair amount of boilerplate to work around a language constraint. It would be very painful if we had to write this code ourselves for every single data type. Instead, the Arrow team has been kind enough to add a new annotation through *Arrow Meta* that generates all this boilerplate on our behalf. Annotating the following `ListK` data type with `@higherkind` ...
+
+[source, kotlin]
+----
+@higherkind
+sealed class ListK<out A> : ListKOf<A> {
+    fun <B> foldRight(z: B, f: (A, B) -> B): B = TODO()
+}
+----
+
+...makes the annotation processor generate the boilerplate:
+
+[source, kotlin]
+----
+class ForListK private constructor() { companion object }
+
+typealias ListKOf<A> = arrow.Kind<ForListK, A>
+
+@Suppress("UNCHECKED_CAST", "NOTHING_TO_INLINE")
+inline fun <A> ListKOf<A>.fix(): ListK<A> = this as ListK<A>
+----
+
+
+Finally, we can write the following code without anything else required:
+
+[source, kotlin]
+----
+object ListKFoldable : Foldable<ForListK> {
+    override fun <A, B> foldRight(
+        fa: ListKOf<A>,
+        z: B,
+        f: (A, B) -> B
+        ): B = fa.fix().foldRight(z, f)
+}
+----
+
+All we need to do is add an annotation to our data type and extend a type alias, and all the code will be generated for us. This couldn’t be easier. Job done!
+
+== C.2 Partially applied type constructors
+
+As seen in the earlier chapters of this book, it is possible to have a partially applied function. We can do the same for _higher-kinded types_, resulting in partially applied type constructors. A good example is the *state monad*
+
+Consider the `State<S, A>` class. If we were to define `IntState`, it would require us to fix the `S` to `Int`, thus resulting in `State<Int, A>`.
+
+Further, if we wanted to define a `Monad` of `IntState`, we would need to write `Int`-specific method implementations for this `State<Int, A>` monad variant. We would also need to do this for _every other type_ of state monad. This could be a very painful and time-consuming exercise.
+
+Instead of hardcoding these types, we can resort to using the `Kind2<F, A, B>` type alias, a sibling of the `Kind<F, A>` described earlier. This alias is merely a nested variant of the `Kind` we already know:
+
+[source, kotlin]
+----
+typealias Kind2<F, A, B> = Kind<Kind<F, A>, B>
+----
+
+Having this at our disposal, we can declare a `StateOf<S, A>` that has two type parameters, `S` and `A`. We can use this in overridden method signatures like `flatMap` and `unit` when referring to our higher-kinded type. Here is this new type alias along with its surrogate type:
+
+[source, kotlin]
+----
+sealed class ForState private constructor() {companion object}
+
+typealias StateOf<S, A> = Kind2<ForState, S, A>
+----
+
+Next, we need to introduce the partially applied type declaration required for assembling `S` variants of different types of the state monad:
+
+[source, kotlin]
+-----
+typealias StatePartialOf<S> = Kind<ForState, S>
+-----
+
+Armed with two variants of the type declaration, one _partially applied_ and the other _unapplied_, we can declare our state monad for different permutations of `S` and `A` while implementing combinators only once at an abstract level:
+
+[source, kotlin]
+----
+interface StateMonad<S> : Monad<StatePartialOf<S>> {
+
+    override fun <A> unit(a: A): StateOf<S, A> =
+        State { s -> a to s }
+
+    override fun <A, B> flatMap(
+        fa: StateOf<S, A>,
+        f: (A) -> StateOf<S, B>
+    ): StateOf<S, B> =
+        fa.fix().flatMap { a -> f(a).fix() }
+}
+----
+
+We now use the partially applied type declaration to determine type `S` of the given state monad. For instance, it could be a `stringStateMonad` or an `intStateMonad`, with `S` being the interchangeable type of the state monad family. Dropping down to the method level, we resort to using the unapplied type declaration, with `S` taking on its partially applied value and `A` having the flexibility to change depending on method use and context.
+
+This can now be used to partially apply a type when defining an instance of `StateMonad`. In the example, we apply `Int` or `String` to give us state monads of the type family we require:
+
+[source, kotlin]
+----
+val intStateMonad: StateMonad<Int> = object : StateMonad<Int> {}
+val stringStateMonad: StateMonad<String> = object : StateMonad<String> {}
+----
+
+This approach simply expands on the one taken when dealing with a single type parameter, now using the `Kind2` type to express partial application.
+
+== C.3 Boilerplate code generation with Arrow Meta
+
+Up to this point, all the code can be written by hand without needing a third-party library like Arrow. Even though some might think this is a good idea, writing such code is mundane and time consuming. Why spend time writing such code if Arrow can generate it for you?
+
+This section explains how you can use Arrow to generate all the boilerplate while having a very low impact on your code base. All that is required are two simple changes to your data type:
+
+====
+Add a `@higherkind` annotation to your class declaration.
+
+Extend your data type class from a generated alias.
+====
+
+As an example, consider the `ListK` data type again:
+
+[source, kotlin]
+----
+@higherkind
+sealed class ListK<out A> : ListKOf<A> {
+    fun <B> foldRight(z: B, f: (A, B) -> B): B = TODO()
+}
+----
+
+In addition, some changes need to be made to your build. We will only cover _Gradle_ builds here, as they are by far the most common, although it is also possible to achieve this with Maven.
+
+We will use *Arrow Meta* to perform the code generation. It comes in the form of a compiler plugin that is driven from *kapt*, the Kotlin Annotation Processing Tool. We begin by enabling kapt in our build.gradle file under the plugins block, ensuring that the version matches that of the kotlin JVM plugin:
+
+...
