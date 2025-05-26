@@ -163,7 +163,7 @@ NOTE: xref:../../../test/kotlin/chapter10/solutions/ex4/listing.kt[]
 ====
 Talking about monoids
 
-a type being a monoid <-> having a monoid instance.
+a type being a monoid <--> having a monoid instance.
 
 It is tempting to think of a `Monoid<A>` instance as being a `monoid`.
 
@@ -201,7 +201,7 @@ A type class is a _type system_ construct that can be used to implement _ad hoc 
 
 Monoids have an intimate connection with lists.
 
-Let’s take a closer look at the signatures of `foldLeft` and `foldRight` on List to confirm this observation:
+Let’s take a closer look at the signatures of `foldLeft` and `foldRight` on `List` to confirm this observation:
 
 [source,kotlin]
 ----
@@ -283,7 +283,7 @@ fun <A, B> foldLeft(la: Sequence<A>, z: B, f: (B, A) -> B): B =
 
 IMPORTANT: xref:../../../test/kotlin/chapter10/exercises/ex6/listing.kt[]
 
-NOTE: xref:../../../test/kotlin/chapter10/solutions/ex6/listi
+NOTE: xref:../../../test/kotlin/chapter10/solutions/ex6/listing.kt[]
 
 
 == 10.3 Associativity and parallelism
@@ -417,8 +417,6 @@ IMPORTANT: xref:../../../test/kotlin/chapter10/exercises/ex11/listing.kt[]
 NOTE: xref:../../../test/kotlin/chapter10/solutions/ex11/listing.kt[]
 
 
-    SOLUTION_HERE()
-
 ====
 Monoid homomorphisms
 
@@ -455,7 +453,7 @@ The two `Boolean` monoids `(false, ||)` and `(true, &&)` are also _isomorphic, v
 
 == 10.5 Foldable data structures
 
-Chapter 3 implemented the data structures List and Tree, both of which could be folded. Then, in chapter 5, we wrote Stream, a lazy structure that could be folded much like List.
+Chapter 3 implemented the data structures `List` and `Tree`, both of which could be folded. Then, in chapter 5, we wrote `Stream`, a lazy structure that could be folded much like `List`.
 
 When we’re writing code that needs to process data in one of these structures, we often don’t care about the shape of the structure. It doesn’t matter if it’s a tree, a list, lazy, eager, efficiently random access, and so forth.
 
@@ -689,7 +687,9 @@ res0: kotlin.collections.Map<kotlin.String,kotlin.collections.Map<
 kotlin.String, kotlin.Int>> = {o1={i1=1, i2=2, i3=3}}
 ----
 
-By nesting monoids, we have now merged a nested data structure by issuing a single command. Next, we will look at a monoid that _emits a function as a monoid_.
+By nesting monoids, we have now merged a nested data structure by issuing a single command.
+
+Next, we will look at a monoid that _emits a function as a monoid_.
 
 Write a monoid instance for functions whose results themselves are monoids.
 
@@ -745,12 +745,14 @@ res1: kotlin.Double = 0.4
 ----
 
 
-It can be tedious to assemble monoids by hand using productMonoid and foldMap. Part of the problem is that we’re building up the Monoid separately from the mapping function of foldMap, and we must manually keep these “aligned” as we did here. A better way would be to create a combinator library that makes it more convenient to assemble these composed monoids. Such a library could define complex computations that may be parallelized and run in a single pass. This is beyond the scope of the chapter but certainly worth exploring as a fun project if this fascinates you.
+It can be tedious to assemble monoids by hand using `productMonoid` and `foldMap`. Part of the problem is that we’re building up the `Monoid` separately from the mapping function of `foldMap`, and we must manually keep these “aligned” as we did here.
+
+A better way would be to create a _combinator_ library that makes it more convenient to assemble these composed monoids. Such a library could define complex computations that may be parallelized and run in a single pass. This is beyond the scope of the chapter but certainly worth exploring as a fun project if this fascinates you.
 
 
-In this chapter, we introduced one of the most straightforward purely algebraic abstractions, the monoid. When you start looking for it, you’ll find ample opportunity to exploit the monoidal structure in your own libraries. The associative property enables folding any Foldable data type and gives the flexibility of doing so in parallel. Monoids are also compositional, and you can use them to assemble folds in a declarative and reusable way.
+In this chapter, we introduced one of the most straightforward purely algebraic abstractions, the _monoid_. When you start looking for it, you’ll find ample opportunity to exploit the monoidal structure in your own libraries. The associative property enables folding any `Foldable` data type and gives the flexibility of doing so in _parallel_. Monoids are also _compositional_, and you can use them to assemble folds in a declarative and reusable way.
 
-Monoid has been our first purely abstract algebra, defined only in terms of its abstract operations and the laws that govern them. We saw how we can still write useful functions that know nothing about their arguments except that their type forms a monoid. This more abstract mode of thinking is something we’ll develop further in the rest of part 3. We’ll consider other purely algebraic interfaces and show how they encapsulate common patterns that we’ve repeated throughout this book.
+Monoid has been our first purely abstract algebra, defined only in terms of its abstract operations and the laws that govern them. We saw how we can still write useful functions that know nothing about their arguments except that their type forms a monoid.
 
 ====
 Summary
